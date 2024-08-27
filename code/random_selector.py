@@ -23,6 +23,9 @@ def select_random_rows(input_file, output_file, n, exclude_files=None):
         # Merge and remove the common rows
         filtered_df = df1.merge(df2, indicator=True, how='left').loc[lambda x: x['_merge'] != 'both']
         filtered_df = filtered_df.drop(columns=['_merge'])
+        
+        # Remove any potential duplicates in the filtered dataframe
+        filtered_df = filtered_df.drop_duplicates().reset_index(drop=True)
 
         # If N is greater than the number of available rows, adjust N
         n = min(n, len(filtered_df))
