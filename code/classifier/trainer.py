@@ -4,6 +4,9 @@ from datasets import load_dataset
 from transformers import BertTokenizer, BertForSequenceClassification, Trainer, TrainingArguments
 import evaluate
 from sklearn.model_selection import train_test_split, StratifiedKFold
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 FOLD_QTY = 10
 LABEL_QTY = 10
@@ -37,15 +40,15 @@ def load_trainer(model, trainer_args, tokenizer, train_split, test_split):
 
 def load_trainer_args(tag, model_name):
     return TrainingArguments(
-        output_dir=f'./{model_name}_{tag}',
+        output_dir=f'./models/{model_name}_{tag}',
         eval_strategy="epoch",
         save_strategy="epoch",
         learning_rate=2e-5,
         per_device_train_batch_size=16,
         per_device_eval_batch_size=64,
-        num_train_epochs=3,
+        num_train_epochs=10,
         weight_decay=0.01,
-        load_best_model_at_end=True,
+        load_best_model_at_end=False,
     )
 
 
@@ -90,6 +93,7 @@ def train_model(model, tokenizer, split_datasets, model_name, multiclass):
         for i in range(1, FOLD_QTY):
             train_split = split_datasets[f'train_{i}']
             test_split = split_datasets[f'test_{i}']
+            logging.info(f'Training {i} split')
             trainer = train(model, tokenizer, train_split, test_split, i, model_name)
             all_fold_metrics.append(evaluate_metrics(trainer))
             #trainer.save_model(f"./{model_name}_{i}")
@@ -97,6 +101,7 @@ def train_model(model, tokenizer, split_datasets, model_name, multiclass):
         for emotion in LABEL_MAP.keys():
             train_split = split_datasets[f'train_{emotion}']
             test_split = split_datasets[f'test_{emotion}']
+            logging.info(f'Training {i} split')
             trainer = train(model, tokenizer, train_split, test_split, emotion, model_name)
             all_fold_metrics.append(evaluate_metrics(trainer))
             #trainer.save_model(f"./{model_name}_{emotion}")
@@ -181,15 +186,18 @@ def push_model_to_hf(model_id, tokenizer_id):
 
 def main(args):
     # Set arguments
+    logging.info("Loading dataset, model and tokenizer")
     dataset = load_hf_dataset(args.repository_id)
     model = load_hf_model(args.model_id)
     tokenizer = load_tokenizer(args.tokenizer_id)
     multiclass = args.multiclass
     
     # Split and tokenize dataset
+    logging.info("Preprocessing and splitting data")
     split_datasets = preprocess_dataset(dataset, tokenizer, multiclass)
 
     # Train model
+    logging.info("Training models")
     metrics = train_model(model, tokenizer, split_datasets, args.model_id.split('/')[-1], multiclass)
     
     # Save metrics
