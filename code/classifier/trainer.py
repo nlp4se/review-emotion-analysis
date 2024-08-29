@@ -12,7 +12,7 @@ FOLD_QTY = 10
 LABEL_QTY = 10
 LABEL_MAP = {
     'Joy': 0, 'Sadness': 1, 'Anger': 2, 'Fear': 3, 'Trust': 4, 'Disgust': 5,
-    'Surprise': 6, 'Anticipation': 7, 'Neutral': 8, 'Reject': 9
+    'Surprise': 6, 'Anticipation': 7, 'Neutral': 8#, 'Reject': 9
 }
 metric = evaluate.load("accuracy")
 
@@ -46,7 +46,7 @@ def load_trainer_args(tag, model_name):
         learning_rate=2e-5,
         per_device_train_batch_size=16,
         per_device_eval_batch_size=64,
-        num_train_epochs=10,
+        num_train_epochs=3,
         weight_decay=0.01,
         load_best_model_at_end=False,
     )
