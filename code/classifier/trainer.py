@@ -135,6 +135,9 @@ def preprocess_dataset(dataset, tokenizer, multiclass=True):
             'attention_mask': combined_attention_mask,
             'label': label
         }
+        
+    # Remove all reject instances
+    df_cleaned = df[df['emotion-primary-agreement'] != 'Reject']
     
     # Preprocess the entire dataset once
     processed_dataset = dataset['train'].map(tokenize_and_process, batched=False)
