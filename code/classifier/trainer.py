@@ -4,7 +4,10 @@ from datasets import load_dataset
 from transformers import BertTokenizer, BertForSequenceClassification, Trainer, TrainingArguments
 import evaluate
 from sklearn.model_selection import train_test_split, StratifiedKFold
+from sklearn.metrics import confusion_matrix, classification_report, accuracy_score, precision_recall_fscore_support
 import logging
+import pandas as pd
+from collections import Counter
 
 logging.basicConfig(level=logging.INFO)
 
@@ -16,16 +19,28 @@ LABEL_MAP = {
 }
 metric = evaluate.load("accuracy")
 
-
 def compute_metrics(eval_pred):
     logits, labels = eval_pred
     predictions = np.argmax(logits, axis=-1)
-    return metric.compute(predictions=predictions, references=labels)
-
+    
+    # Calculate the confusion matrix
+    conf_matrix = confusion_matrix(labels, predictions)
+    
+    # Calculate accuracy, precision, recall, and F1 score
+    accuracy = accuracy_score(labels, predictions)
+    precision, recall, f1, _ = precision_recall_fscore_support(labels, predictions, average=None, zero_division=0)
+    
+    # Convert numpy arrays to lists to make them JSON serializable
+    return {
+        "accuracy": accuracy,
+        "confusion_matrix": conf_matrix.tolist(),  # Convert ndarray to list
+        "precision": precision.tolist(),  # Convert ndarray to list
+        "recall": recall.tolist(),  # Convert ndarray to list
+        "f1": f1.tolist(),  # Convert ndarray to list
+    }
 
 def evaluate_metrics(trainer):
     return trainer.evaluate()
-
 
 def load_trainer(model, trainer_args, tokenizer, train_split, test_split):
     return Trainer(
@@ -36,7 +51,6 @@ def load_trainer(model, trainer_args, tokenizer, train_split, test_split):
         tokenizer=tokenizer,
         compute_metrics=compute_metrics
     )
-
 
 def load_trainer_args(tag, model_name):
     return TrainingArguments(
@@ -51,10 +65,8 @@ def load_trainer_args(tag, model_name):
         load_best_model_at_end=False,
     )
 
-
 def load_tokenizer(tokenizer_id):
     return BertTokenizer.from_pretrained(tokenizer_id)
-
 
 def preprocess(examples, tokenizer):
     tokens = tokenizer(
@@ -76,7 +88,6 @@ def preprocess(examples, tokenizer):
         'labels': labels
     }
 
-
 def train(model, tokenizer, train_split, test_split, tag, model_name):
     trainer = load_trainer(model,
                         load_trainer_args(tag, model_name),
@@ -86,22 +97,36 @@ def train(model, tokenizer, train_split, test_split, tag, model_name):
     trainer.train()
     return trainer
 
+def print_occurrences(dataset):
+    print(Counter(dataset['emotion-primary-agreement']))
 
-def train_model(model, tokenizer, split_datasets, model_name, multiclass):
+def train_model(tokenizer, split_datasets, model_name, multiclass):
     all_fold_metrics = []
     if multiclass:
         for i in range(1, FOLD_QTY):
+            model = load_hf_model(args.model_id)
             train_split = split_datasets[f'train_{i}']
             test_split = split_datasets[f'test_{i}']
+            
             logging.info(f'Training {i} split')
+            print_occurrences(train_split)
+            logging.info(f'Testing {i} split')
+            print_occurrences(test_split)
+            
             trainer = train(model, tokenizer, train_split, test_split, i, model_name)
             all_fold_metrics.append(evaluate_metrics(trainer))
             #trainer.save_model(f"./{model_name}_{i}")
     else:
         for emotion in LABEL_MAP.keys():
+            model = load_hf_model(args.model_id)
             train_split = split_datasets[f'train_{emotion}']
             test_split = split_datasets[f'test_{emotion}']
-            logging.info(f'Training {i} split')
+            
+            logging.info(f'Training {emotion} split')
+            print_occurrences(train_split)
+            logging.info(f'Testing {i} split')
+            print_occurrences(test_split)
+            
             trainer = train(model, tokenizer, train_split, test_split, emotion, model_name)
             all_fold_metrics.append(evaluate_metrics(trainer))
             #trainer.save_model(f"./{model_name}_{emotion}")
@@ -136,12 +161,10 @@ def preprocess_dataset(dataset, tokenizer, multiclass=True):
             'label': label
         }
         
-    # Remove all reject instances
-    df_cleaned = df[df['emotion-primary-agreement'] != 'Reject']
-    
     # Preprocess the entire dataset once
     processed_dataset = dataset['train'].map(tokenize_and_process, batched=False)
-
+    print_occurrences(processed_dataset)
+    
     split_datasets = {}
 
     if multiclass:
@@ -191,7 +214,6 @@ def main(args):
     # Set arguments
     logging.info("Loading dataset, model and tokenizer")
     dataset = load_hf_dataset(args.repository_id)
-    model = load_hf_model(args.model_id)
     tokenizer = load_tokenizer(args.tokenizer_id)
     multiclass = args.multiclass
     
@@ -201,7 +223,7 @@ def main(args):
 
     # Train model
     logging.info("Training models")
-    metrics = train_model(model, tokenizer, split_datasets, args.model_id.split('/')[-1], multiclass)
+    metrics = train_model(tokenizer, split_datasets, args.model_id.split('/')[-1], multiclass)
     
     # Save metrics
     save_metrics_to_file(metrics, 'metrics.txt')
