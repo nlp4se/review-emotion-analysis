@@ -15,17 +15,15 @@ def select_random_rows(input_file, output_file, n, exclude_files=None):
 
         # Read and merge all exclude CSVs into a single dataframe
         exclude_dfs = [pd.read_csv(file) for file in exclude_files]
-        df2 = pd.concat(exclude_dfs).drop_duplicates().reset_index(drop=True)
+        df1 = df1.drop_duplicates(subset=['reviewId', 'sentenceId']).reset_index(drop=True)
+        df2 = pd.concat(exclude_dfs).drop_duplicates(subset=['reviewId', 'sentenceId']).reset_index(drop=True)
 
         print(len(df1))
         print(len(df2))
 
-        # Merge and remove the common rows
-        filtered_df = df1.merge(df2, indicator=True, how='left').loc[lambda x: x['_merge'] != 'both']
-        filtered_df = filtered_df.drop(columns=['_merge'])
-        
-        # Remove any potential duplicates in the filtered dataframe
-        filtered_df = filtered_df.drop_duplicates().reset_index(drop=True)
+        # Remove df2 from df1
+        filtered_df = df1[~df1[['reviewId', 'sentenceId']].apply(tuple, axis=1).isin(df2[['reviewId', 'sentenceId']].apply(tuple, axis=1))]
+        print(len(filtered_df))
 
         # If N is greater than the number of available rows, adjust N
         n = min(n, len(filtered_df))
