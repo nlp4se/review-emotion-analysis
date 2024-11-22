@@ -29,6 +29,7 @@ def parse_args():
     parser.add_argument("--tokenizer-id", required=True, help="Hugging Face tokenizer ID")
     parser.add_argument("--input-csv", required=True, help="Path to the input CSV file")
     parser.add_argument('--multiclass', action='store_true', help='Set this flag to use multiclass classification')
+    parser.add_argument('--k', required=True, help='Cross-validation split')
     return parser.parse_args()
 
 def load_data(input_csv, multiclass):
@@ -271,7 +272,7 @@ def main():
             tokenizer_id=args.tokenizer_id,
             texts=texts,
             labels=labels,
-            k=10,
+            k=int(args.k),
             multiclass=True,
             output_dir="./evaluation"
         )
@@ -284,7 +285,7 @@ def main():
             tokenizer_id=args.tokenizer_id,
             texts=texts,
             binary_labels=binary_labels,
-            k=10,
+            k=int(args.k),
             output_dir="./evaluation"
         )
     
