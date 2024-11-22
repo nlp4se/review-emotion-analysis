@@ -8,11 +8,11 @@ load_dotenv()
 CSV_PATH = 'datasets/csv'
 K10_SPLIT_PATH = 'datasets/splits/k10'
 COLUMNS = ['app_name', 'categoryId', 'reviewId', 'sentenceId', 'feature', 'review', 'sentence',
-           'emotion-primary-agreement']
+           'emotion-A', 'emotion-B']
 
 LABEL_MAP = {
     'Joy': 0, 'Sadness': 1, 'Anger': 2, 'Fear': 3, 'Trust': 4, 'Disgust': 5,
-    'Surprise': 6, 'Anticipation': 7, 'Neutral': 8, 'Reject': 9
+    'Surprise': 6, 'Anticipation': 7, 'Neutral': 8
 }
 
 
