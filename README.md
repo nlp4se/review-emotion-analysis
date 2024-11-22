@@ -2,7 +2,7 @@
 
 Example for fine-tuning model:
 
-```python.exe .\code\classifier\fine-tuning.py --model-id bert-base-uncased --tokenizer-id bert-base-uncased --input-csv .\data\ground-truth\ground-truth.csv --multiclass```
+```python.exe .\code\classifier\fine-tuning.py --model-id bert-base-uncased --tokenizer-id bert-base-uncased --input-csv .\data\ground-truth\ground-truth.csv --multiclass --k 10```
 
 Example of random selector:
 
