@@ -44,12 +44,12 @@ def load_data(input_csv, multiclass):
         )
         df['labels'] = df['labels'].apply(lambda x: x[0])  # Flatten for stratification
     else:
-        binary_labels = {emotion: [] for emotion in MULTICLASS_LABEL_MAP.keys()}
-        for _, row in df.iterrows():
-            for emotion in MULTICLASS_LABEL_MAP.keys():
-                binary_labels[emotion].append(
-                    BINARY_LABEL_MAP['Positive'] if emotion in [row['emotion-A'], row['emotion-B']] else BINARY_LABEL_MAP['Negative']
-                )
+        binary_labels = {}
+        for emotion in MULTICLASS_LABEL_MAP.keys():
+            df[f"{emotion}_label"] = df[['emotion-A', 'emotion-B']].apply(
+                lambda x: BINARY_LABEL_MAP['Positive'] if emotion in x.values else BINARY_LABEL_MAP['Negative'], axis=1
+            )
+            binary_labels[emotion] = df[f"{emotion}_label"].to_numpy()
         logger.info("Binary labels prepared for emotions.")
         return df, binary_labels
     return df
@@ -62,6 +62,14 @@ def display_emotion_counts(df):
     logger.info("Number of instances per emotion:")
     for emotion, count in emotion_counts.items():
         logger.info(f"{emotion}: {count}")
+
+def display_emotion_counts_binary(df):
+    #TODO
+    logger.info("Number of instances per emotion:")
+    logger.info("\t\tYes\t\tNo")
+    for emotion in MULTICLASS_LABEL_MAP.keys():
+        logger.info(f'{emotion}\t\t' + str((df[f'{emotion}_label'] == 1).sum()) + '\t\t' + str((df[f'{emotion}_label'] == 0).sum()))
+    return
 
 def preprocess_data(texts, labels, tokenizer):
     logger.info("Preprocessing data with tokenizer %s", tokenizer.name_or_path)
@@ -81,6 +89,81 @@ def compute_metrics(predictions):
         "recall": recall.tolist(),
         "f1": f1.tolist(),
     }
+
+def cross_validate_binary_models(model_id, tokenizer_id, texts, binary_labels, k=10, output_dir="./output"):
+    logger.info("Starting binary cross-validation with k=%d", k)
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_id)
+
+    metrics = {}
+    
+    for emotion, labels in binary_labels.items():
+        logger.info("Processing binary classifier for emotion: %s", emotion)
+        skf = StratifiedKFold(n_splits=k, shuffle=True, random_state=42)
+        
+        fold_metrics = []
+        for fold, (train_idx, test_idx) in enumerate(skf.split(texts, labels)):
+            logger.info("Processing fold %d/%d for emotion %s", fold + 1, k, emotion)
+            logger.info("Training instances %d", len(train_idx))
+            logger.info("Testing instances %d", len(test_idx))
+            
+            # Split data
+            train_texts, test_texts = texts[train_idx], texts[test_idx]
+            train_labels, test_labels = labels[train_idx], labels[test_idx]
+            
+            # Preprocess
+            train_encodings, train_labels = preprocess_data(train_texts.tolist(), train_labels.tolist(), tokenizer)
+            test_encodings, test_labels = preprocess_data(test_texts.tolist(), test_labels.tolist(), tokenizer)
+            
+            train_dataset = [
+                {key: torch.tensor(val[i]) for key, val in train_encodings.items()} | {"labels": torch.tensor(train_labels[i])}
+                for i in range(len(train_labels))
+            ]
+            test_dataset = [
+                {key: torch.tensor(val[i]) for key, val in test_encodings.items()} | {"labels": torch.tensor(test_labels[i])}
+                for i in range(len(test_labels))
+            ]
+            
+            # Load model
+            model = AutoModelForSequenceClassification.from_pretrained(model_id, num_labels=2)
+            
+            # Define training arguments
+            training_args = TrainingArguments(
+                output_dir=os.path.join(output_dir, f"{emotion}_fold-{fold}"),
+                num_train_epochs=3,
+                per_device_train_batch_size=16,
+                eval_strategy="epoch",
+                save_strategy="epoch",
+                logging_dir=os.path.join(output_dir, f"{emotion}_fold-{fold}/logs"),
+                report_to="none"
+            )
+            
+            # Define Trainer
+            trainer = Trainer(
+                model=model,
+                args=training_args,
+                train_dataset=train_dataset,
+                eval_dataset=test_dataset,
+                compute_metrics=compute_metrics
+            )
+            
+            # Train and evaluate
+            trainer.train()
+            eval_metrics = trainer.evaluate()
+            logger.info("Fold %d metrics for emotion %s: %s", fold + 1, emotion, eval_metrics)
+            
+            fold_metrics.append(eval_metrics)
+        
+        # Aggregate metrics for this emotion
+        avg_metrics = aggregate_metrics(fold_metrics)
+        metrics[emotion] = avg_metrics
+        logger.info("Average metrics for emotion %s: %s", emotion, avg_metrics)
+    
+    # Save metrics
+    metrics_df = pd.DataFrame.from_dict(metrics, orient="index")
+    metrics_csv = os.path.join(output_dir, "binary_metrics.csv")
+    metrics_df.to_csv(metrics_csv, index=True)
+    logger.info("Binary classifier metrics saved to %s", metrics_csv)
+    return metrics
 
 def cross_validate_model(model_id, tokenizer_id, texts, labels, k=10, multiclass=True, output_dir="./output"):
     logger.info("Starting cross-validation with k=%d", k)
@@ -178,26 +261,34 @@ def main():
     args = parse_args()
     logger.info("Arguments received: %s", args)
     
-    df = load_data(args.input_csv, args.multiclass)
-    display_emotion_counts(df)
-    texts = df['sentence'].to_numpy()
-    labels = df['labels'].to_numpy()
-
-    output_dir = "./evaluation"
-    os.makedirs(output_dir, exist_ok=True)
-
-    avg_metrics = cross_validate_model(
-        model_id=args.model_id,
-        tokenizer_id=args.tokenizer_id,
-        texts=texts,
-        labels=labels,
-        k=10,
-        multiclass=args.multiclass,
-        output_dir=output_dir
-    )
+    if args.multiclass:
+        df = load_data(args.input_csv, True)
+        display_emotion_counts(df)
+        texts = df['sentence'].to_numpy()
+        labels = df['labels'].to_numpy()
+        avg_metrics = cross_validate_model(
+            model_id=args.model_id,
+            tokenizer_id=args.tokenizer_id,
+            texts=texts,
+            labels=labels,
+            k=10,
+            multiclass=True,
+            output_dir="./evaluation"
+        )
+    else:
+        df, binary_labels = load_data(args.input_csv, False)
+        display_emotion_counts_binary(df)
+        texts = df['sentence'].to_numpy()
+        avg_metrics = cross_validate_binary_models(
+            model_id=args.model_id,
+            tokenizer_id=args.tokenizer_id,
+            texts=texts,
+            binary_labels=binary_labels,
+            k=10,
+            output_dir="./evaluation"
+        )
     
-    avg_metrics_csv = os.path.join(output_dir, f"{args.model_id}-{'multiclass' if args.multiclass else 'binary'}_metrics.csv")
-    save_metrics(avg_metrics, avg_metrics_csv)
+    logger.info("Cross-validation complete. Final metrics: %s", avg_metrics)
 
 if __name__ == "__main__":
     main()
