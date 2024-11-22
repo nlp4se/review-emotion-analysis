@@ -234,7 +234,7 @@ def cross_validate_model(model_id, tokenizer_id, texts, labels, k=10, multiclass
     
     # Save detailed metrics for all folds
     fold_metrics_df = pd.DataFrame(fold_detailed_metrics)
-    fold_metrics_csv = os.path.join(output_dir, "fold_metrics.csv")
+    fold_metrics_csv = os.path.join(output_dir, "multiclass_metrics.csv")
     fold_metrics_df.to_csv(fold_metrics_csv, index=False)
     logger.info("Detailed metrics for all folds saved to %s", fold_metrics_csv)
 
