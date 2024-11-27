@@ -9,6 +9,22 @@ import os
 import logging
 import numpy as np
 
+class CustomTrainer(Trainer):
+    def __init__(self, *args, class_weights=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.class_weights = class_weights
+
+    def compute_loss(self, model, inputs, return_outputs=False):
+        labels = inputs.pop("labels")
+        outputs = model(**inputs)
+        logits = outputs.logits
+        if self.class_weights is not None:
+            loss_fn = torch.nn.CrossEntropyLoss(weight=self.class_weights)
+        else:
+            loss_fn = torch.nn.CrossEntropyLoss()
+        loss = loss_fn(logits, labels)
+        return (loss, outputs) if return_outputs else loss
+
 # Set up logging
 logging.basicConfig(
     level=logging.INFO,
@@ -94,19 +110,9 @@ def compute_metrics(predictions):
         "f1": f1.tolist(),
     }
 
-def cross_validate_binary_models(model_id, tokenizer_id, texts, binary_labels, k=10, output_dir="./output"):
+def cross_validate_binary_models(model_id, tokenizer_id, texts, binary_labels, k=10, output_dir="./output", use_class_weights=False):
     logger.info("Starting binary cross-validation with k=%d", k)
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_id)
-
-    if args.use_class_weights:
-        class_weights = compute_class_weight(
-            class_weight='balanced',
-            classes=np.unique(train_labels),
-            y=train_labels
-        )
-        class_weights = torch.tensor(class_weights, dtype=torch.float).to("cuda" if torch.cuda.is_available() else "cpu")
-    else:
-        class_weights = None
 
     metrics = {}
     
@@ -123,6 +129,17 @@ def cross_validate_binary_models(model_id, tokenizer_id, texts, binary_labels, k
             # Split data
             train_texts, test_texts = texts[train_idx], texts[test_idx]
             train_labels, test_labels = labels[train_idx], labels[test_idx]
+
+            # Class weights
+            if use_class_weights:
+                class_weights = compute_class_weight(
+                    class_weight='balanced',
+                    classes=np.unique(train_labels),
+                    y=train_labels
+                )
+                class_weights = torch.tensor(class_weights, dtype=torch.float).to("cuda" if torch.cuda.is_available() else "cpu")
+            else:
+                class_weights = None
             
             # Preprocess
             train_encodings, train_labels = preprocess_data(train_texts.tolist(), train_labels.tolist(), tokenizer)
@@ -143,7 +160,7 @@ def cross_validate_binary_models(model_id, tokenizer_id, texts, binary_labels, k
             # Define training arguments
             training_args = TrainingArguments(
                 output_dir=os.path.join(output_dir, f"{emotion}_fold-{fold}"),
-                num_train_epochs=3,
+                num_train_epochs=10,
                 per_device_train_batch_size=16,
                 eval_strategy="epoch",
                 save_strategy="epoch",
@@ -152,13 +169,13 @@ def cross_validate_binary_models(model_id, tokenizer_id, texts, binary_labels, k
             )
             
             # Define Trainer
-            trainer = Trainer(
+            trainer = CustomTrainer(
                 model=model,
                 args=training_args,
                 train_dataset=train_dataset,
                 eval_dataset=test_dataset,
                 compute_metrics=compute_metrics,
-                compute_loss=compute_loss if args.use_class_weights else None
+                class_weights=class_weights
             )
             
             # Train and evaluate
@@ -180,20 +197,10 @@ def cross_validate_binary_models(model_id, tokenizer_id, texts, binary_labels, k
     logger.info("Binary classifier metrics saved to %s", metrics_csv)
     return metrics
 
-def cross_validate_model(model_id, tokenizer_id, texts, labels, k=10, multiclass=True, output_dir="./output"):
+def cross_validate_model(model_id, tokenizer_id, texts, labels, k=10, multiclass=True, output_dir="./output", use_class_weights=False):
     logger.info("Starting cross-validation with k=%d", k)
     skf = StratifiedKFold(n_splits=k, shuffle=True, random_state=42)
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_id)
-
-    if args.use_class_weights:
-        class_weights = compute_class_weight(
-            class_weight='balanced',
-            classes=np.unique(train_labels),
-            y=train_labels
-        )
-        class_weights = torch.tensor(class_weights, dtype=torch.float).to("cuda" if torch.cuda.is_available() else "cpu")
-    else:
-        class_weights = None
 
     fold_metrics = []
     fold_detailed_metrics = []
@@ -206,6 +213,17 @@ def cross_validate_model(model_id, tokenizer_id, texts, labels, k=10, multiclass
         # Split data
         train_texts, test_texts = texts[train_idx], texts[test_idx]
         train_labels, test_labels = labels[train_idx], labels[test_idx]
+
+        # Class weights
+        if use_class_weights:
+            class_weights = compute_class_weight(
+                class_weight='balanced',
+                classes=np.unique(train_labels),
+                y=train_labels
+            )
+            class_weights = torch.tensor(class_weights, dtype=torch.float).to("cuda" if torch.cuda.is_available() else "cpu")
+        else:
+            class_weights = None
         
         # Preprocess
         train_encodings, train_labels = preprocess_data(train_texts.tolist(), train_labels.tolist(), tokenizer)
@@ -230,7 +248,7 @@ def cross_validate_model(model_id, tokenizer_id, texts, labels, k=10, multiclass
         # Define training arguments
         training_args = TrainingArguments(
             output_dir=os.path.join(output_dir, f"fold-{fold}"),
-            num_train_epochs=3,
+            num_train_epochs=10,
             per_device_train_batch_size=16,
             eval_strategy="epoch",
             save_strategy="epoch",
@@ -239,13 +257,13 @@ def cross_validate_model(model_id, tokenizer_id, texts, labels, k=10, multiclass
         )
         
         # Define Trainer
-        trainer = Trainer(
+        trainer = CustomTrainer(
             model=model,
             args=training_args,
             train_dataset=train_dataset,
             eval_dataset=test_dataset,
             compute_metrics=compute_metrics,
-            compute_loss=compute_loss if args.use_class_weights else None
+            class_weights=class_weights
         )
         
         # Train and evaluate
@@ -307,7 +325,8 @@ def main():
             labels=labels,
             k=int(args.k),
             multiclass=True,
-            output_dir="./evaluation"
+            output_dir="./evaluation",
+            use_class_weights=args.use_class_weights
         )
     else:
         df, binary_labels = load_data(args.input_csv, False)
@@ -319,7 +338,8 @@ def main():
             texts=texts,
             binary_labels=binary_labels,
             k=int(args.k),
-            output_dir="./evaluation"
+            output_dir="./evaluation",
+            use_class_weights=args.use_class_weights
         )
     
     logger.info("Cross-validation complete. Final metrics: %s", avg_metrics)
