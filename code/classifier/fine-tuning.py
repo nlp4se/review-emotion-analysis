@@ -33,9 +33,12 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Define label maps
+#MULTICLASS_LABEL_MAP = {
+#    'Joy': 0, 'Sadness': 1, 'Anger': 2, 'Fear': 3, 'Trust': 4, 'Disgust': 5,
+#    'Surprise': 6, 'Anticipation': 7, 'Neutral': 8
+#}
 MULTICLASS_LABEL_MAP = {
-    'Joy': 0, 'Sadness': 1, 'Anger': 2, 'Fear': 3, 'Trust': 4, 'Disgust': 5,
-    'Surprise': 6, 'Anticipation': 7, 'Neutral': 8
+    'Joy': 0, 'Sadness': 1, 'Anticipation': 2, 'Trust': 3
 }
 
 BINARY_LABEL_MAP = {'Positive': 1, 'Negative': 0}
@@ -163,7 +166,7 @@ def cross_validate_binary_models(model_id, tokenizer_id, texts, binary_labels, k
                 num_train_epochs=10,
                 per_device_train_batch_size=16,
                 eval_strategy="epoch",
-                save_strategy="epoch",
+                save_strategy="no",
                 logging_dir=os.path.join(output_dir, f"{emotion}_fold-{fold}/logs"),
                 report_to="none"
             )
@@ -251,7 +254,7 @@ def cross_validate_model(model_id, tokenizer_id, texts, labels, k=10, multiclass
             num_train_epochs=10,
             per_device_train_batch_size=16,
             eval_strategy="epoch",
-            save_strategy="epoch",
+            save_strategy="no",
             logging_dir=os.path.join(output_dir, f"fold-{fold}/logs"),
             report_to="none"
         )
