@@ -4,6 +4,7 @@ import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
+from sklearn.utils.class_weight import compute_class_weight
 import os
 import logging
 import numpy as np
@@ -30,6 +31,8 @@ def parse_args():
     parser.add_argument("--input-csv", required=True, help="Path to the input CSV file")
     parser.add_argument('--multiclass', action='store_true', help='Set this flag to use multiclass classification')
     parser.add_argument('--k', required=True, help='Cross-validation split')
+    parser.add_argument('--use-class-weights', action='store_true', help='Use class weights in the loss function')
+
     return parser.parse_args()
 
 def load_data(input_csv, multiclass):
@@ -95,6 +98,16 @@ def cross_validate_binary_models(model_id, tokenizer_id, texts, binary_labels, k
     logger.info("Starting binary cross-validation with k=%d", k)
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_id)
 
+    if args.use_class_weights:
+        class_weights = compute_class_weight(
+            class_weight='balanced',
+            classes=np.unique(train_labels),
+            y=train_labels
+        )
+        class_weights = torch.tensor(class_weights, dtype=torch.float).to("cuda" if torch.cuda.is_available() else "cpu")
+    else:
+        class_weights = None
+
     metrics = {}
     
     for emotion, labels in binary_labels.items():
@@ -144,7 +157,8 @@ def cross_validate_binary_models(model_id, tokenizer_id, texts, binary_labels, k
                 args=training_args,
                 train_dataset=train_dataset,
                 eval_dataset=test_dataset,
-                compute_metrics=compute_metrics
+                compute_metrics=compute_metrics,
+                compute_loss=compute_loss if args.use_class_weights else None
             )
             
             # Train and evaluate
@@ -170,6 +184,16 @@ def cross_validate_model(model_id, tokenizer_id, texts, labels, k=10, multiclass
     logger.info("Starting cross-validation with k=%d", k)
     skf = StratifiedKFold(n_splits=k, shuffle=True, random_state=42)
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_id)
+
+    if args.use_class_weights:
+        class_weights = compute_class_weight(
+            class_weight='balanced',
+            classes=np.unique(train_labels),
+            y=train_labels
+        )
+        class_weights = torch.tensor(class_weights, dtype=torch.float).to("cuda" if torch.cuda.is_available() else "cpu")
+    else:
+        class_weights = None
 
     fold_metrics = []
     fold_detailed_metrics = []
@@ -220,7 +244,8 @@ def cross_validate_model(model_id, tokenizer_id, texts, labels, k=10, multiclass
             args=training_args,
             train_dataset=train_dataset,
             eval_dataset=test_dataset,
-            compute_metrics=compute_metrics
+            compute_metrics=compute_metrics,
+            compute_loss=compute_loss if args.use_class_weights else None
         )
         
         # Train and evaluate
@@ -242,6 +267,14 @@ def cross_validate_model(model_id, tokenizer_id, texts, labels, k=10, multiclass
     avg_metrics = aggregate_metrics(fold_metrics)
     logger.info("Average metrics across folds: %s", avg_metrics)
     return avg_metrics
+
+def compute_loss(model, inputs, return_outputs=False):
+    labels = inputs.pop("labels")
+    outputs = model(**inputs)
+    logits = outputs.logits
+    loss_fn = torch.nn.CrossEntropyLoss(weight=class_weights)
+    loss = loss_fn(logits, labels)
+    return (loss, outputs) if return_outputs else loss
 
 def aggregate_metrics(fold_metrics):
     avg_metrics = {
