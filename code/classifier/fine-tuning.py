@@ -38,10 +38,18 @@ logger = logging.getLogger(__name__)
 #    'Surprise': 6, 'Anticipation': 7, 'Neutral': 8
 #}
 MULTICLASS_LABEL_MAP = {
-    'Joy': 0, 'Sadness': 1, 'Anticipation': 2, 'Trust': 3
+    'Joy': 0, 'Sadness': 1, 'Anticipation': 2, 'Trust': 3, 'Surprise': 4, 'Neutral': 5
 }
 
 BINARY_LABEL_MAP = {'Positive': 1, 'Negative': 0}
+
+def remove_empty_folders(path):
+    for root, dirs, files in os.walk(path, topdown=False):
+        for directory in dirs:
+            dir_path = os.path.join(root, directory)
+            if not os.listdir(dir_path):  # Check if the directory is empty
+                os.rmdir(dir_path)
+                logger.info(f"Removed empty folder: {dir_path}")
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Fine-tune Hugging Face models for emotion classification.")
@@ -60,22 +68,36 @@ def load_data(input_csv, multiclass):
     logger.info("Data loaded. Number of rows: %d", len(df))
     logger.info("Dataset head:\n%s", df.head())
     
+    valid_emotions = set(MULTICLASS_LABEL_MAP.keys())
+
+    # Process only valid emotions
+    df['emotion-A'] = df['emotion-A'].apply(lambda x: x if x in valid_emotions else None)
+    df['emotion-B'] = df['emotion-B'].apply(lambda x: x if x in valid_emotions else None)
+
+    # Remove rows where both 'emotion-A' and 'emotion-B' are invalid
+    df = df.dropna(subset=['emotion-A', 'emotion-B'], how='all')
+
     if multiclass:
+        # Use the first valid emotion (priority to 'emotion-A' if both are valid)
         df['labels'] = df[['emotion-A', 'emotion-B']].apply(
-            lambda x: [MULTICLASS_LABEL_MAP[x[0]], MULTICLASS_LABEL_MAP[x[1]]] if pd.notna(x[1]) else [MULTICLASS_LABEL_MAP[x[0]]],
+            lambda x: MULTICLASS_LABEL_MAP[x['emotion-A']] if pd.notna(x['emotion-A']) 
+                      else MULTICLASS_LABEL_MAP[x['emotion-B']], 
             axis=1
         )
-        df['labels'] = df['labels'].apply(lambda x: x[0])  # Flatten for stratification
     else:
         binary_labels = {}
         for emotion in MULTICLASS_LABEL_MAP.keys():
             df[f"{emotion}_label"] = df[['emotion-A', 'emotion-B']].apply(
-                lambda x: BINARY_LABEL_MAP['Positive'] if emotion in x.values else BINARY_LABEL_MAP['Negative'], axis=1
+                lambda x: BINARY_LABEL_MAP['Positive'] if emotion in [x['emotion-A'], x['emotion-B']] else BINARY_LABEL_MAP['Negative'],
+                axis=1
             )
             binary_labels[emotion] = df[f"{emotion}_label"].to_numpy()
         logger.info("Binary labels prepared for emotions.")
         return df, binary_labels
+    
+    logger.info("Filtered data. Number of rows: %d", len(df))
     return df
+
 
 def display_emotion_counts(df):
     # Count occurrences of each emotion in emotion-A and emotion-B columns
@@ -103,15 +125,46 @@ def compute_metrics(predictions):
     preds, labels = predictions
     preds = preds.argmax(axis=1)  # Get predicted class indices
     accuracy = accuracy_score(labels, preds)
-    precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, average=None)
+    precision, recall, f1, support = precision_recall_fscore_support(labels, preds, average=None)
 
-    # Convert NumPy arrays to Python lists for JSON serialization
+    # Convert per-class metrics to a dictionary with class names
+    per_class_metrics = {
+        class_name: {
+            "precision": precision[class_idx],
+            "recall": recall[class_idx],
+            "f1": f1[class_idx],
+            "support": support[class_idx]
+        }
+        for class_name, class_idx in MULTICLASS_LABEL_MAP.items()
+    }
+
+    # Aggregate average metrics
+    average_metrics = {
+        "eval_accuracy": accuracy,
+        "eval_precision": np.mean(precision),
+        "eval_recall": np.mean(recall),
+        "eval_f1": np.mean(f1)
+    }
+
+    # Return both average and per-class metrics
+    return {"average_metrics": average_metrics, "per_class_metrics": per_class_metrics}
+
+
+def compute_metrics_binary(predictions):
+    preds, labels = predictions
+    preds = preds.argmax(axis=1)  # For multi-class
+    # For binary, ensure pos_label is correctly used
+    accuracy = accuracy_score(labels, preds)
+    precision, recall, f1, _ = precision_recall_fscore_support(
+        labels, preds, average="binary", pos_label=1
+    )
     return {
         "accuracy": float(accuracy),
-        "precision": precision.tolist(),
-        "recall": recall.tolist(),
-        "f1": f1.tolist(),
+        "precision": float(precision),
+        "recall": float(recall),
+        "f1": float(f1),
     }
+
 
 def cross_validate_binary_models(model_id, tokenizer_id, texts, binary_labels, k=10, output_dir="./output", use_class_weights=False):
     logger.info("Starting binary cross-validation with k=%d", k)
@@ -167,7 +220,7 @@ def cross_validate_binary_models(model_id, tokenizer_id, texts, binary_labels, k
                 per_device_train_batch_size=16,
                 eval_strategy="epoch",
                 save_strategy="no",
-                logging_dir=os.path.join(output_dir, f"{emotion}_fold-{fold}/logs"),
+                #logging_dir=os.path.join(output_dir, f"{emotion}_fold-{fold}/logs"),
                 report_to="none"
             )
             
@@ -177,7 +230,7 @@ def cross_validate_binary_models(model_id, tokenizer_id, texts, binary_labels, k
                 args=training_args,
                 train_dataset=train_dataset,
                 eval_dataset=test_dataset,
-                compute_metrics=compute_metrics,
+                compute_metrics=compute_metrics_binary,
                 class_weights=class_weights
             )
             
@@ -187,6 +240,8 @@ def cross_validate_binary_models(model_id, tokenizer_id, texts, binary_labels, k
             logger.info("Fold %d metrics for emotion %s: %s", fold + 1, emotion, eval_metrics)
             
             fold_metrics.append(eval_metrics)
+
+            remove_empty_folders(output_dir)
         
         # Aggregate metrics for this emotion
         avg_metrics = aggregate_metrics(fold_metrics)
@@ -206,7 +261,7 @@ def cross_validate_model(model_id, tokenizer_id, texts, labels, k=10, multiclass
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_id)
 
     fold_metrics = []
-    fold_detailed_metrics = []
+    all_per_class_metrics = []
 
     for fold, (train_idx, test_idx) in enumerate(skf.split(texts, labels)):
         logger.info("Processing fold %d/%d", fold + 1, k)
@@ -242,7 +297,6 @@ def cross_validate_model(model_id, tokenizer_id, texts, labels, k=10, multiclass
             for i in range(len(test_labels))
         ]
 
-        
         # Load model
         model = AutoModelForSequenceClassification.from_pretrained(
             model_id, num_labels=len(MULTICLASS_LABEL_MAP) if multiclass else 2
@@ -255,7 +309,6 @@ def cross_validate_model(model_id, tokenizer_id, texts, labels, k=10, multiclass
             per_device_train_batch_size=16,
             eval_strategy="epoch",
             save_strategy="no",
-            logging_dir=os.path.join(output_dir, f"fold-{fold}/logs"),
             report_to="none"
         )
         
@@ -274,20 +327,75 @@ def cross_validate_model(model_id, tokenizer_id, texts, labels, k=10, multiclass
         eval_metrics = trainer.evaluate()
         logger.info("Fold %d metrics: %s", fold + 1, eval_metrics)
 
-        # Save fold-specific metrics
-        fold_metrics.append(eval_metrics)
-        fold_detailed_metrics.append({"fold": fold + 1, **eval_metrics})
-    
-    # Save detailed metrics for all folds
-    fold_metrics_df = pd.DataFrame(fold_detailed_metrics)
-    fold_metrics_csv = os.path.join(output_dir, "multiclass_metrics.csv")
-    fold_metrics_df.to_csv(fold_metrics_csv, index=False)
-    logger.info("Detailed metrics for all folds saved to %s", fold_metrics_csv)
+        # Collect fold metrics
+        fold_metrics.append(eval_metrics["eval_average_metrics"])
+        all_per_class_metrics.append(eval_metrics["eval_per_class_metrics"])
 
-    # Aggregate metrics
+        remove_empty_folders(output_dir)
+    
+    # Aggregate average metrics
     avg_metrics = aggregate_metrics(fold_metrics)
     logger.info("Average metrics across folds: %s", avg_metrics)
+
+    # Aggregate per-class metrics
+    aggregated_per_class_metrics = aggregate_per_class_metrics(all_per_class_metrics)
+
+    # Save all metrics to a single CSV
+    metrics_csv = os.path.join(output_dir, "multiclass_metrics.csv")
+    save_metrics_to_csv(avg_metrics, aggregated_per_class_metrics, metrics_csv)
+    logger.info("Detailed metrics for all folds saved to %s", metrics_csv)
+
     return avg_metrics
+
+def aggregate_per_class_metrics(all_per_class_metrics):
+    aggregated_metrics = {class_name: {"precision": [], "recall": [], "f1": [], "support": []} 
+                          for class_name in MULTICLASS_LABEL_MAP.keys()}
+
+    # Collect metrics for each class
+    for per_class_metrics in all_per_class_metrics:
+        for class_name, metrics in per_class_metrics.items():
+            for metric, value in metrics.items():
+                aggregated_metrics[class_name][metric].append(value)
+
+    # Average across folds
+    for class_name, metrics in aggregated_metrics.items():
+        for metric, values in metrics.items():
+            aggregated_metrics[class_name][metric] = np.mean(values).item()
+
+    return aggregated_metrics
+
+def save_metrics_to_csv(avg_metrics, per_class_metrics, file_path):
+    """
+    Save average metrics and per-class metrics to a CSV file.
+    Columns: accuracy, precision, recall, f1
+    Rows: 1 for each class + 1 for the average metrics.
+    """
+    # Prepare data for the CSV
+    rows = []
+
+    # Add per-class metrics
+    for class_name, metrics in per_class_metrics.items():
+        rows.append({
+            "Class": class_name,
+            "Accuracy": None,  # Not relevant for individual classes
+            "Precision": metrics["precision"],
+            "Recall": metrics["recall"],
+            "F1": metrics["f1"]
+        })
+
+    # Add average metrics
+    rows.append({
+        "Class": "Average",
+        "Accuracy": avg_metrics["accuracy"],
+        "Precision": avg_metrics["precision"],
+        "Recall": avg_metrics["recall"],
+        "F1": avg_metrics["f1"]
+    })
+
+    # Create DataFrame and save to CSV
+    metrics_df = pd.DataFrame(rows)
+    metrics_df.to_csv(file_path, index=False)
+    logger.info(f"Metrics saved successfully to {file_path}")
 
 def compute_loss(model, inputs, return_outputs=False):
     labels = inputs.pop("labels")
