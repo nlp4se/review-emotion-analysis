@@ -33,13 +33,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Define label maps
-#MULTICLASS_LABEL_MAP = {
-#    'Joy': 0, 'Sadness': 1, 'Anger': 2, 'Fear': 3, 'Trust': 4, 'Disgust': 5,
-#    'Surprise': 6, 'Anticipation': 7, 'Neutral': 8
-#}
 MULTICLASS_LABEL_MAP = {
-    'Joy': 0, 'Sadness': 1, 'Anticipation': 2, 'Trust': 3, 'Surprise': 4, 'Neutral': 5
+    'Joy': 0, 'Sadness': 1, 'Anger': 2, 'Fear': 3, 'Trust': 4, 'Disgust': 5,
+    'Surprise': 6, 'Anticipation': 7, 'Neutral': 8
 }
+#MULTICLASS_LABEL_MAP = {
+#    'Joy': 0, 'Sadness': 1, 'Anticipation': 2, 'Trust': 3, 'Surprise': 4, 'Neutral': 5
+#}
 
 BINARY_LABEL_MAP = {'Positive': 1, 'Negative': 0}
 
