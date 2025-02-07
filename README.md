@@ -10,4 +10,4 @@ Example of random selector:
 
 Example of GPT-4o annotation:
 
-```python .\code\generative_annotation\annotate-gpt-4o.py .\data\ground-truth\ground-truth.xlsx .\data\instructions\guidelines.txt .\data\output\generative_annotation\```
+```python .\code\generative_annotation\annotate-gpt-4o.py --input .\data\ground-truth\ground-truth.xlsx --guidelines .\data\instructions\guidelines.txt --output .\data\output\generative_annotation\ --n 1```
