@@ -169,31 +169,39 @@ def main(input_file: str, guidelines_file: str, output_folder: str, n: int = Non
     emotion_columns = ['Joy', 'Trust', 'Fear', 'Surprise', 'Sadness', 
                        'Disgust', 'Anger', 'Anticipation', 'Neutral', 'Reject']
 
-    # Process each review
-    for idx, row in df.iterrows():
-        print(f"Processing review {idx + 1}/{len(df)}")
-
-        annotations = get_gpt4o_annotation(
-            thread_id=thread_id,
-            assistant_id=assistant_id,
-            review=row['review'],
-            sentence=row['sentence']
-        )
-
-        # Update DataFrame with annotations
-        for emotion in emotion_columns:
-            df.at[idx, emotion] = annotations.get(emotion, 0)
-
-        # Respect API rate limits
-        time.sleep(2)
-    
     # Create output folder if it doesn't exist
     os.makedirs(output_folder, exist_ok=True)
-
-    # Save results
     output_file = os.path.join(output_folder, 'GPT-4o-annotations.xlsx')
-    df.to_excel(output_file, index=False)
-    print(f"Annotation completed! Results saved to {output_file}")
+
+    try:
+        # Process each review
+        for idx, row in df.iterrows():
+            print(f"Processing review {idx + 1}/{len(df)}")
+
+            annotations = get_gpt4o_annotation(
+                thread_id=thread_id,
+                assistant_id=assistant_id,
+                review=row['review'],
+                sentence=row['sentence']
+            )
+
+            # Update DataFrame with annotations
+            for emotion in emotion_columns:
+                df.at[idx, emotion] = annotations.get(emotion, 0)
+
+            # Save intermediate results after each successful annotation
+            df.to_excel(output_file, index=False)
+            
+            # Respect API rate limits
+            time.sleep(5)
+
+    except Exception as e:
+        print(f"Error occurred during processing: {e}")
+        print("Saving partial results...")
+    finally:
+        # Save final results (whether complete or partial)
+        df.to_excel(output_file, index=False)
+        print(f"Results saved to {output_file}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run GPT-4o emotion annotation with Assistants API')
