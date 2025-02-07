@@ -36,18 +36,64 @@ def analyze_emotion_annotations(xlsx_path):
     plt.savefig(output_dir / 'emotions_per_review_hist.png')
     plt.close()
     
-    # 3. Create correlation heatmap
-    correlation_matrix = (emotion_cols == 'X').corr()
-    plt.figure(figsize=(12, 10))
-    sns.heatmap(correlation_matrix, 
+    # 3. Create correlation heatmaps
+    emotion_data = (emotion_cols == 'X')
+    
+    # Calculate both Phi and Yule's Q correlations
+    phi_correlation = emotion_data.corr()
+    
+    # Calculate Yule's Q correlation
+    yules_q = pd.DataFrame(0, index=emotion_cols.columns, columns=emotion_cols.columns)
+    for i in emotion_cols.columns:
+        for j in emotion_cols.columns:
+            # Create contingency table
+            n11 = ((emotion_data[i] & emotion_data[j])).sum()  # both present
+            n10 = ((emotion_data[i] & ~emotion_data[j])).sum() # i present, j absent
+            n01 = ((~emotion_data[i] & emotion_data[j])).sum() # i absent, j present
+            n00 = ((~emotion_data[i] & ~emotion_data[j])).sum() # both absent
+            
+            # Calculate Yule's Q: (n11*n00 - n10*n01) / (n11*n00 + n10*n01)
+            numerator = (n11 * n00) - (n10 * n01)
+            denominator = (n11 * n00) + (n10 * n01)
+            yules_q.loc[i, j] = numerator / denominator if denominator != 0 else 0
+
+    # Create two subplots
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 10))
+    
+    # Plot Phi correlation
+    sns.heatmap(phi_correlation, 
+                ax=ax1,
                 annot=True, 
-                cmap='coolwarm', 
+                cmap='RdYlGn',
                 vmin=-1, 
                 vmax=1, 
-                center=0)
-    plt.title('Emotion Correlation Matrix')
+                center=0,
+                annot_kws={'size': 8},
+                fmt='.2f',
+                square=True,
+                cbar_kws={"shrink": .8})
+    ax1.set_title('Phi Correlation Matrix', fontsize=16, pad=20)
+    ax1.set_xticklabels(ax1.get_xticklabels(), rotation=45, ha='right', fontsize=10)
+    ax1.set_yticklabels(ax1.get_yticklabels(), rotation=0, fontsize=10)
+    
+    # Plot Yule's Q correlation
+    sns.heatmap(yules_q, 
+                ax=ax2,
+                annot=True, 
+                cmap='RdYlGn',
+                vmin=-1, 
+                vmax=1, 
+                center=0,
+                annot_kws={'size': 8},
+                fmt='.2f',
+                square=True,
+                cbar_kws={"shrink": .8})
+    ax2.set_title("Yule's Q Correlation Matrix", fontsize=16, pad=20)
+    ax2.set_xticklabels(ax2.get_xticklabels(), rotation=45, ha='right', fontsize=10)
+    ax2.set_yticklabels(ax2.get_yticklabels(), rotation=0, fontsize=10)
+    
     plt.tight_layout()
-    plt.savefig(output_dir / 'emotion_correlation_heatmap.png')
+    plt.savefig(output_dir / 'emotion_correlation_heatmaps.png', dpi=300, bbox_inches='tight')
     plt.close()
     
     # Save numerical statistics to text file
@@ -73,8 +119,11 @@ def analyze_emotion_annotations(xlsx_path):
         for review_id in zero_emotion_reviews:
             f.write(f"{review_id}\n")
 
-        f.write("\n\nCorrelation Matrix:\n")
-        f.write(correlation_matrix.to_string())
+        f.write("\n\nPhi Correlation Matrix:\n")
+        f.write(phi_correlation.to_string())
+        
+        f.write("\n\nYule's Q Correlation Matrix:\n")
+        f.write(yules_q.to_string())
 
 if __name__ == "__main__":
     # Set up command line argument parser
