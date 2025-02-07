@@ -2,7 +2,7 @@ import pandas as pd
 from collections import Counter
 
 # Step 1: Read the CSV file
-file_path = 'data/annotations/iteration_3.csv'  # Replace with your file path
+file_path = 'data/annotations/iteration_14.csv'  # Replace with your file path
 df = pd.read_csv(file_path)
 
 # Step 2: Define a function to find the most common and second most common values
@@ -46,7 +46,7 @@ for index, row in df.iterrows():
 print(df)
 
 # Step 4: Save the resulting DataFrame to a new CSV (optional)
-output_file = 'data/annotations/iteration_3_agreement.csv'  # Replace with your desired output file name
+output_file = 'data/annotations/iteration_14_agreement.csv'  # Replace with your desired output file name
 df.to_csv(output_file, index=False)
 
 print("Processing complete. Results saved to:", output_file)
