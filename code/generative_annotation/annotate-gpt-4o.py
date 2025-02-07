@@ -4,6 +4,7 @@ import json
 import os
 import time
 import argparse
+from datetime import datetime
 
 # Initialize OpenAI client
 client = OpenAI(
@@ -150,6 +151,8 @@ def main(input_file: str, guidelines_file: str, output_folder: str, n: int = Non
         output_folder (str): Path to the output directory
         n (int, optional): Number of rows to process. If None, process all rows.
     """
+    start_time = time.time()
+    print(f"Starting annotation process at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
     # Read the Excel file and load guidelines
     df = pd.read_excel(input_file)
@@ -176,6 +179,7 @@ def main(input_file: str, guidelines_file: str, output_folder: str, n: int = Non
     try:
         # Process each review
         for idx, row in df.iterrows():
+            review_start_time = time.time()
             print(f"Processing review {idx + 1}/{len(df)}")
 
             annotations = get_gpt4o_annotation(
@@ -192,6 +196,9 @@ def main(input_file: str, guidelines_file: str, output_folder: str, n: int = Non
             # Save intermediate results after each successful annotation
             df.to_excel(output_file, index=False)
             
+            review_time = time.time() - review_start_time
+            print(f"Review {idx + 1} processed in {review_time:.2f} seconds")
+            
             # Respect API rate limits
             time.sleep(5)
 
@@ -201,7 +208,9 @@ def main(input_file: str, guidelines_file: str, output_folder: str, n: int = Non
     finally:
         # Save final results (whether complete or partial)
         df.to_excel(output_file, index=False)
+        total_time = time.time() - start_time
         print(f"Results saved to {output_file}")
+        print(f"Total processing time: {total_time:.2f} seconds ({total_time/60:.2f} minutes)")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run GPT-4o emotion annotation with Assistants API')
