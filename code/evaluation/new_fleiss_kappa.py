@@ -164,6 +164,9 @@ def create_excel_report(iterations_data, output_path):
     ws['A1'].font = Font(bold=True, size=14)
     
     row = 3
+    
+    # Fixed list of all possible annotators in specified order
+    all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF']
 
     # Convert iteration keys to integers and sort numerically
     for iteration, annotations in sorted(iterations_data.items(), key=lambda x: int(x[0])):
@@ -177,42 +180,44 @@ def create_excel_report(iterations_data, output_path):
         ws[f'A{row}'].font = Font(bold=True)
         row += 1
 
-        # Create matrix headers
-        annotators = sorted(list(annotations.keys()))
-        for i, ann in enumerate(annotators):
+        # Create matrix headers using all possible annotators
+        for i, ann in enumerate(all_annotators):
             ws.cell(row=row, column=i+2, value=ann)
             ws.cell(row=row+i+1, column=1, value=ann)
         
         # Create matrix of kappa values
-        annotator_averages = {ann: [] for ann in annotators}
-        for i, ann1 in enumerate(annotators):
-            for j, ann2 in enumerate(annotators):
-                if ann1 == ann2:
+        annotator_averages = {ann: [] for ann in all_annotators}
+        for i, ann1 in enumerate(all_annotators):
+            for j, ann2 in enumerate(all_annotators):
+                if ann1 == ann2 and ann1 in annotations:
                     ws.cell(row=row+i+1, column=j+2, value=1.0)
                 elif f"{ann1}-{ann2}" in pair_kappas:
                     value = pair_kappas[f"{ann1}-{ann2}"]
                     ws.cell(row=row+i+1, column=j+2, value=value)
                     annotator_averages[ann1].append(value)
                     annotator_averages[ann2].append(value)
+                # If no value exists, cell remains empty
 
         # Add "Average" row and column
-        avg_row = row + len(annotators) + 1
+        avg_row = row + len(all_annotators) + 1
         ws.cell(row=avg_row, column=1, value="Average")
-        ws.cell(row=row, column=len(annotators)+2, value="Average")
+        ws.cell(row=row, column=len(all_annotators)+2, value="Average")
 
-        # Calculate and fill averages
+        # Calculate and fill averages only for annotators with values
         all_values = []
-        for i, ann in enumerate(annotators):
-            ann_avg = np.mean(annotator_averages[ann])
-            # Fill row average
-            ws.cell(row=row+i+1, column=len(annotators)+2, value=ann_avg)
-            # Fill column average
-            ws.cell(row=avg_row, column=i+2, value=ann_avg)
-            all_values.extend(annotator_averages[ann])
+        for i, ann in enumerate(all_annotators):
+            if annotator_averages[ann]:  # Only calculate average if there are values
+                ann_avg = np.mean(annotator_averages[ann])
+                # Fill row average
+                ws.cell(row=row+i+1, column=len(all_annotators)+2, value=ann_avg)
+                # Fill column average
+                ws.cell(row=avg_row, column=i+2, value=ann_avg)
+                all_values.extend(annotator_averages[ann])
 
         # Calculate and fill total average
-        total_avg = np.mean(all_values)
-        ws.cell(row=avg_row, column=len(annotators)+2, value=total_avg)
+        if all_values:  # Only calculate if there are values
+            total_avg = np.mean(all_values)
+            ws.cell(row=avg_row, column=len(all_annotators)+2, value=total_avg)
 
         row = avg_row + 2
 
