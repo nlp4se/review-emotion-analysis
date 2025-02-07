@@ -115,52 +115,40 @@ def calculate_fleiss_kappa_for_iteration(annotations):
         
     num_reviews = len(next(iter(annotations.values())))
     num_emotions = 10
-    kappas = []
+    num_annotators = len(annotations)
     
     # Add defensive check
     if num_reviews == 0:
         print("Warning: No reviews found in annotations")
         return float('nan')
     
-    for emotion_idx in range(num_emotions):
-        # Prepare data for Fleiss' Kappa
-        ratings = np.zeros((num_reviews, 2))  # 2 categories: 0 and 1
-        
-        for review_idx in range(num_reviews):
+    # Create a matrix where each row represents one item (review-emotion pair)
+    # and contains the number of raters who assigned each category (0 or 1)
+    n = num_annotators  # number of raters
+    N = num_reviews * num_emotions  # number of subjects (review-emotion pairs)
+    
+    # Initialize ratings matrix for each subject
+    ratings = np.zeros((N, 2))  # 2 categories: 0 and 1
+    
+    # Fill the ratings matrix
+    for i in range(num_reviews):
+        for j in range(num_emotions):
+            idx = i * num_emotions + j
+            # Count ratings for this review-emotion pair
             count_ones = sum(1 for ann in annotations.values() 
-                           if ann[review_idx][emotion_idx] == 1)
-            ratings[review_idx, 1] = count_ones
-            ratings[review_idx, 0] = len(annotations) - count_ones
-        
-        kappa = fleiss_kappa(ratings)
-        kappas.append(kappa)
-    
-    # Only calculate mean if we have valid kappas
-    if kappas:
-        return np.mean(kappas)
-    else:
-        print("Warning: No valid kappas calculated for this iteration")
-        return float('nan')
-
-def fleiss_kappa(ratings):
-    """Calculate Fleiss' Kappa for a matrix of ratings.
-    
-    Args:
-        ratings: Matrix where each row represents a subject being rated,
-                and each column represents the count of ratings in that category.
-    """
-    n_subjects = ratings.shape[0]  # number of subjects (rows)
-    n_raters = float(ratings.sum(axis=1)[0])  # number of raters
+                           if ann[i][j] == 1)
+            ratings[idx, 1] = count_ones  # number of 1s
+            ratings[idx, 0] = n - count_ones  # number of 0s
     
     # Calculate P_i (proportion of agreement for each subject)
-    P_i = ((ratings * ratings).sum(axis=1) - n_raters) / (n_raters * (n_raters - 1))
-    P_bar = P_i.mean()  # mean agreement across subjects
+    P_i = np.sum(ratings * (ratings - 1), axis=1) / (n * (n - 1))
+    P_bar = np.mean(P_i)  # mean agreement across subjects
     
     # Calculate P_e (expected agreement by chance)
-    P_j = ratings.sum(axis=0) / (n_subjects * n_raters)
-    P_e = (P_j * P_j).sum()
+    p_j = np.sum(ratings, axis=0) / (N * n)  # proportion of assignments in each category
+    P_e = np.sum(p_j ** 2)
     
-    # Calculate kappa
+    # Calculate Fleiss' Kappa
     kappa = (P_bar - P_e) / (1 - P_e)
     
     return kappa
