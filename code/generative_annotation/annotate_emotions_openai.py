@@ -13,24 +13,23 @@ load_dotenv()
 # Initialize OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-ASSISTANT_ID_FILE = "assistant_id.txt"
-
-def load_assistant_id() -> str:
-    """Load the assistant ID from a file if it exists."""
-    if os.path.exists(ASSISTANT_ID_FILE):
-        with open(ASSISTANT_ID_FILE, 'r') as file:
+def load_assistant_id(model: str) -> str:
+    """Load the assistant ID from a model-specific file if it exists."""
+    assistant_id_file = f"assistant_id_{model}.txt"
+    if os.path.exists(assistant_id_file):
+        with open(assistant_id_file, 'r') as file:
             return file.read().strip()
     return None
 
-def get_assistant() -> str:
+def get_assistant(model: str) -> str:
     """Check for an existing assistant ID or raise an error if not found."""
-    assistant_id = load_assistant_id()
+    assistant_id = load_assistant_id(model)
     
     if assistant_id:
-        print(f"Reusing existing assistant ID: {assistant_id}")
+        print(f"Reusing existing assistant ID for {model}: {assistant_id}")
         return assistant_id
     
-    raise ValueError("Assistant ID not found. Run create_assistant.py first.")
+    raise ValueError(f"Assistant ID not found for {model}. Run create_assistant.py first.")
 
 def create_thread() -> str:
     """Create a new thread for conversation persistence."""
@@ -121,17 +120,17 @@ def validate_json(response_text: str) -> list:
         print(response_text)
         return [{emotion: 0 for emotion in expected_emotions}]
 
-def main(input_file: str, output_folder: str, batch_size: int = 5, n: int = None):
+def main(input_file: str, output_folder: str, batch_size: int = 5, n: int = None, model: str = "GPT-4"):
     print(f"Starting annotation process at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
     df = pd.read_excel(input_file)
     if n is not None:
         df = df.head(n)
 
-    assistant_id = get_assistant()
+    assistant_id = get_assistant(model)
 
     os.makedirs(output_folder, exist_ok=True)
-    output_file = os.path.join(output_folder, 'GPT-4o-annotations.xlsx')
+    output_file = os.path.join(output_folder, f'{model}-annotations.xlsx')
 
     results_df = pd.DataFrame()
     total_tokens_used = 0
@@ -179,5 +178,6 @@ if __name__ == "__main__":
     parser.add_argument('--output', required=True, help='Output folder')
     parser.add_argument('--batch_size', type=int, default=10, help='Number of reviews to process in each batch')
     parser.add_argument('--n', type=int, help='Number of rows to process (optional)')
+    parser.add_argument('--model', type=str, default='GPT-4o', help='Model name for output file')
     args = parser.parse_args()
-    main(args.input, args.output, args.batch_size, args.n)
+    main(args.input, args.output, args.batch_size, args.n, args.model)

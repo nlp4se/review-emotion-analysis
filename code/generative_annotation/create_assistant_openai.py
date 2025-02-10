@@ -11,16 +11,15 @@ client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY")
 )
 
-ASSISTANT_ID_FILE = "assistant_id.txt"
-
 def load_guidelines(guidelines_path: str) -> str:
     """Load annotation guidelines from a text file."""
     with open(guidelines_path, 'r', encoding='utf-8') as file:
         return file.read()
 
-def save_assistant_id(assistant_id: str):
+def save_assistant_id(assistant_id: str, model: str):
     """Save the assistant ID to a file for reuse."""
-    with open(ASSISTANT_ID_FILE, 'w') as file:
+    filename = f"assistant_id_{model}.txt"
+    with open(filename, 'w') as file:
         file.write(assistant_id)
 
 def create_assistant(guidelines_file: str, model: str = "gpt-4o"):
@@ -109,7 +108,7 @@ def create_assistant(guidelines_file: str, model: str = "gpt-4o"):
         }
     )
 
-    save_assistant_id(assistant.id)
+    save_assistant_id(assistant.id, model)
 
     print("Assistant created successfully.")
     return assistant
