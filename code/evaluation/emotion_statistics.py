@@ -11,7 +11,7 @@ def analyze_emotion_annotations(xlsx_path):
     df = pd.read_excel(xlsx_path, engine='openpyxl')
     
     # Get emotion columns (J to S)
-    emotion_cols = df.iloc[:, 9:19]  # 0-based indexing for columns J to S
+    emotion_cols = df.iloc[:, 10:20]  # 0-based indexing for columns J to S
     
     # Create output directory in same location as input file
     output_dir = Path(xlsx_path).parent / 'analysis_output'

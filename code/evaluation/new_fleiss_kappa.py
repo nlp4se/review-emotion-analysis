@@ -7,6 +7,10 @@ from openpyxl import Workbook
 from openpyxl.styles import Font
 import logging
 
+# Fixed list of all possible annotators in specified order
+#all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 'gpt-4o', 'gpt-4o-mini']
+all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 'gpt-4o-mini']
+
 def get_annotation_data(folder_path):
     """Extract annotation data from all iteration folders."""
     logging.info(f"Starting to process folder: {folder_path}")
@@ -32,7 +36,7 @@ def get_annotation_data(folder_path):
                             # Extract annotator code from filename (e.g., 'QM' from 'iteration_0_QM.xlsx')
                             annotator = file.split('_')[2].split('.')[0]
 
-                            if len(annotator) == 2:
+                            if annotator != 'agreement' and annotator != 'discussion':
                                 file_path = os.path.join(iteration_folder, file)
                                 
                                 # Use pandas to read Excel file instead of open()
@@ -72,16 +76,19 @@ def parse_annotations(df):
         logging.error(f"Error in parse_annotations: {str(e)}")
         raise
 
-def calculate_pairwise_cohen_kappa(annotations):
+def calculate_pairwise_cohen_kappa(iteration, annotations):
     """Calculate Cohen's Kappa for each pair of annotators."""
-    annotators = list(annotations.keys())
+    # Only consider annotators that are in our predefined list
+    annotators = [ann for ann in all_annotators if ann in annotations]
     pair_kappas = {}
+
+    logging.info(f"Iteration {iteration}. Valid annotators: {annotators}")
     
     if len(annotators) < 2:
-        print(f"Warning: Not enough annotators to calculate pairwise kappa (found {len(annotators)})")
+        print(f"Warning: Not enough valid annotators to calculate pairwise kappa (found {len(annotators)})")
+        print(annotators)
         return {}
     
-    logging.info(f"Annotators: {annotators}")
     for i in range(len(annotators)):
         for j in range(i + 1, len(annotators)):
             ann1, ann2 = annotators[i], annotators[j]
@@ -107,14 +114,18 @@ def calculate_pairwise_cohen_kappa(annotations):
 
 def calculate_fleiss_kappa_for_iteration(annotations):
     """Calculate Fleiss' Kappa for all annotators in an iteration."""
+    # Filter annotations to only include predefined annotators
+    filtered_annotations = {ann: data for ann, data in annotations.items() 
+                          if ann in all_annotators}
+    
     # Add defensive check
-    if not annotations:
-        print("Warning: No annotations found for this iteration")
+    if not filtered_annotations:
+        print("Warning: No valid annotations found for this iteration")
         return float('nan')
         
-    num_reviews = len(next(iter(annotations.values())))
+    num_reviews = len(next(iter(filtered_annotations.values())))
     num_emotions = 10
-    num_annotators = len(annotations)
+    num_annotators = len(filtered_annotations)
     
     # Add defensive check
     if num_reviews == 0:
@@ -134,7 +145,7 @@ def calculate_fleiss_kappa_for_iteration(annotations):
         for j in range(num_emotions):
             idx = i * num_emotions + j
             # Count ratings for this review-emotion pair
-            count_ones = sum(1 for ann in annotations.values() 
+            count_ones = sum(1 for ann in filtered_annotations.values() 
                            if ann[i][j] == 1)
             ratings[idx, 1] = count_ones  # number of 1s
             ratings[idx, 0] = n - count_ones  # number of 0s
@@ -163,9 +174,6 @@ def create_excel_report(iterations_data, output_path):
     ws['A1'].font = Font(bold=True, size=14)
     
     row = 3
-    
-    # Fixed list of all possible annotators in specified order
-    all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 'GPT-4o', 'GPT-4o-mini']
 
     # Convert iteration keys to integers and sort numerically
     for iteration, annotations in sorted(iterations_data.items(), key=lambda x: int(x[0])):
@@ -174,7 +182,7 @@ def create_excel_report(iterations_data, output_path):
         row += 1
         
         # Pairwise Cohen's Kappa
-        pair_kappas = calculate_pairwise_cohen_kappa(annotations)
+        pair_kappas = calculate_pairwise_cohen_kappa(iteration, annotations)
         ws[f'A{row}'] = "Pairwise Cohen's Kappa"
         ws[f'A{row}'].font = Font(bold=True)
         row += 1
@@ -233,7 +241,44 @@ def create_excel_report(iterations_data, output_path):
     overall_fleiss_kappas = [calculate_fleiss_kappa_for_iteration(annotations) for annotations in iterations_data.values()]
     overall_fleiss = np.mean(overall_fleiss_kappas)
     ws[f'A{row}'] = f"Average Fleiss' Kappa across all iterations: {overall_fleiss:.3f}"
-    
+    row += 2
+
+    # Add new section for overall pairwise agreements
+    ws[f'A{row}'] = "Overall Average Pairwise Agreements"
+    ws[f'A{row}'].font = Font(bold=True)
+    row += 1
+
+    # Headers for the simple table
+    ws[f'A{row}'] = "Annotator Pair"
+    ws[f'B{row}'] = "Average Agreement"
+    ws[f'C{row}'] = "Number of Iterations"
+    row += 1
+
+    # Initialize dictionary to store all pairwise kappas
+    all_pair_kappas = {}
+
+    # Collect all pairwise kappas across iterations
+    for iteration, annotations in iterations_data.items():
+        pair_kappas = calculate_pairwise_cohen_kappa(iteration, annotations)
+        for pair, kappa in pair_kappas.items():
+            if pair not in all_pair_kappas:
+                all_pair_kappas[pair] = []
+            all_pair_kappas[pair].append(kappa)
+
+    # Sort pairs by average agreement
+    pair_averages = {
+        pair: (np.mean(kappas), len(kappas))
+        for pair, kappas in all_pair_kappas.items()
+    }
+    sorted_pairs = sorted(pair_averages.items(), key=lambda x: x[1][0], reverse=True)
+
+    # Write the pairs and their averages
+    for pair, (avg_kappa, num_iterations) in sorted_pairs:
+        ws[f'A{row}'] = pair
+        ws[f'B{row}'] = f"{avg_kappa:.3f}"
+        ws[f'C{row}'] = num_iterations
+        row += 1
+
     wb.save(output_path)
 
 def main():

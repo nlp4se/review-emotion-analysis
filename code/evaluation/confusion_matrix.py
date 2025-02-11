@@ -24,7 +24,7 @@ def load_and_process_data(file_path):
     
     df = pd.read_excel(file_path, engine=engine)
     # Select columns J to S (emotion annotations)
-    return df.iloc[:, 9:19]  # 0-based indexing for columns J to S
+    return df.iloc[:, 10:20]  # 0-based indexing for columns J to S
 
 def create_confusion_matrices(ground_truth_data, prediction_data, emotion_labels, output_dir):
     # Convert the binary columns into a single column with emotion labels
