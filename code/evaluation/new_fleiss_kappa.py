@@ -60,10 +60,9 @@ def parse_annotations(df):
                 'Disgust', 'Anger', 'Anticipation', 'Neutral', 'Reject']
     
     try:
-        
         for _, row in df.iterrows():
-            # Check for 'X' in each emotion column
-            emotion_vector = [1 if str(row[emotion]).upper() == 'X' else 0 
+            # Convert values to 1 if present (1) and 0 if absent (0 or empty)
+            emotion_vector = [1 if str(row.get(emotion, '')).strip() == '1' else 0 
                             for emotion in emotions]
             annotations.append(emotion_vector)
         
@@ -166,7 +165,7 @@ def create_excel_report(iterations_data, output_path):
     row = 3
     
     # Fixed list of all possible annotators in specified order
-    all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF']
+    all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 'GPT-4o', 'GPT-4o-mini']
 
     # Convert iteration keys to integers and sort numerically
     for iteration, annotations in sorted(iterations_data.items(), key=lambda x: int(x[0])):

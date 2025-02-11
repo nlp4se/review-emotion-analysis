@@ -25,9 +25,9 @@ def process_excel_file(input_file, output_file):
         emotions_in_row = row.dropna().values
         for emotion in all_emotions:
             if emotion in emotions_in_row:
-                new_emotion_columns[emotion].append('X')
+                new_emotion_columns[emotion].append('1')
             else:
-                new_emotion_columns[emotion].append('')
+                new_emotion_columns[emotion].append('0')
     
     # Create new dataframe with base columns and emotion columns
     result_df = pd.concat([

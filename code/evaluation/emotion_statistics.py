@@ -18,7 +18,7 @@ def analyze_emotion_annotations(xlsx_path):
     output_dir.mkdir(exist_ok=True)
     
     # 1. Create pie chart of emotion distribution
-    emotion_counts = (emotion_cols == 'X').sum()
+    emotion_counts = (emotion_cols == 1).sum()
     plt.figure(figsize=(10, 10))
     plt.pie(emotion_counts, labels=emotion_counts.index, autopct='%1.1f%%')
     plt.title('Distribution of Emotions')
@@ -26,7 +26,7 @@ def analyze_emotion_annotations(xlsx_path):
     plt.close()
     
     # 2. Create histogram of emotions per review
-    emotions_per_review = (emotion_cols == 'X').sum(axis=1)
+    emotions_per_review = (emotion_cols == 1).sum(axis=1)
     plt.figure(figsize=(10, 6))
     plt.hist(emotions_per_review, bins=range(0, max(emotions_per_review) + 2), align='left')
     plt.title('Number of Emotions per Review')
@@ -37,13 +37,13 @@ def analyze_emotion_annotations(xlsx_path):
     plt.close()
     
     # 3. Create correlation heatmaps
-    emotion_data = (emotion_cols == 'X')
+    emotion_data = (emotion_cols == 1)
     
     # Calculate both Phi and Yule's Q correlations
     phi_correlation = emotion_data.corr()
     
     # Calculate Yule's Q correlation
-    yules_q = pd.DataFrame(0, index=emotion_cols.columns, columns=emotion_cols.columns)
+    yules_q = pd.DataFrame(0.0, index=emotion_cols.columns, columns=emotion_cols.columns)
     for i in emotion_cols.columns:
         for j in emotion_cols.columns:
             # Create contingency table
@@ -68,7 +68,7 @@ def analyze_emotion_annotations(xlsx_path):
                 vmin=-1, 
                 vmax=1, 
                 center=0,
-                annot_kws={'size': 8},
+                annot_kws={'size': 14},
                 fmt='.2f',
                 square=True,
                 cbar_kws={"shrink": .8})
@@ -84,7 +84,7 @@ def analyze_emotion_annotations(xlsx_path):
                 vmin=-1, 
                 vmax=1, 
                 center=0,
-                annot_kws={'size': 8},
+                annot_kws={'size': 14},
                 fmt='.2f',
                 square=True,
                 cbar_kws={"shrink": .8})
@@ -99,7 +99,7 @@ def analyze_emotion_annotations(xlsx_path):
     # Save numerical statistics to text file
     with open(output_dir / 'statistics_summary.txt', 'w') as f:
         f.write("Emotion Distribution:\n")
-        f.write(emotion_counts.to_string())
+        f.write(emotion_counts.sort_values(ascending=False).to_string())
         f.write("\n\nEmotions per Review Statistics:\n")
         f.write(emotions_per_review.describe().to_string())
         
