@@ -10,8 +10,9 @@ import logging
 # Fixed list of all possible annotators in specified order
 #all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 'gpt-4o', 'gpt-4o-mini']
 all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 'gpt-4o-mini']
+#all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 'gpt-4o']
 
-def get_annotation_data(folder_path):
+def get_annotation_data(folder_path, exclude_iterations=None):
     """Extract annotation data from all iteration folders."""
     logging.info(f"Starting to process folder: {folder_path}")
     iterations_data = {}
@@ -21,6 +22,12 @@ def get_annotation_data(folder_path):
         for item in os.listdir(folder_path):
             if item.startswith('iteration_'):
                 iteration_num = item.split('_')[1]  # Get iteration number
+                
+                # Skip excluded iterations
+                if exclude_iterations and int(iteration_num) in exclude_iterations:
+                    logging.info(f"Skipping excluded iteration: {iteration_num}")
+                    continue
+                    
                 logging.info(f"Processing iteration folder: {item}")
                 
                 if iteration_num not in iterations_data:
@@ -292,12 +299,25 @@ def main():
         ]
     )
     
-    if len(sys.argv) != 2:
+    if len(sys.argv) < 2:
         logging.error("Invalid number of arguments")
-        print("Usage: python new_fleiss_kappa.py <folder_path>")
+        print("Usage: python new_fleiss_kappa.py <folder_path> [excluded_iterations]")
+        print("Example: python new_fleiss_kappa.py ./data 0,1,2")
         sys.exit(1)
     
     folder_path = sys.argv[1]
+    
+    # Parse excluded iterations if provided
+    exclude_iterations = None
+    if len(sys.argv) > 2:
+        try:
+            exclude_iterations = [int(x) for x in sys.argv[2].split(',')]
+            logging.info(f"Excluding iterations: {exclude_iterations}")
+        except ValueError:
+            logging.error("Invalid format for excluded iterations. Use comma-separated integers.")
+            print("Error: Invalid format for excluded iterations. Use comma-separated integers (e.g., 0,1,2)")
+            sys.exit(1)
+    
     if not os.path.exists(folder_path):
         logging.error(f"Folder does not exist: {folder_path}")
         print(f"Error: Folder '{folder_path}' does not exist.")
@@ -306,7 +326,7 @@ def main():
     try:
         # Process all iterations
         logging.info("Starting to process iterations")
-        iterations_data = get_annotation_data(folder_path)
+        iterations_data = get_annotation_data(folder_path, exclude_iterations)
         
         # Create and save report
         output_path = os.path.join(folder_path, 'agreement-statistics.xlsx')
