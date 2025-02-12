@@ -1,52 +1,91 @@
+import os
+import sys
 import pandas as pd
-from collections import Counter
+from pathlib import Path
+import csv
 
-# Step 1: Read the CSV file
-file_path = 'data/annotations/iteration_14.csv'  # Replace with your file path
-df = pd.read_csv(file_path)
-
-# Step 2: Define a function to find the most common and second most common values
-def get_common_annotations(row):
-    # Gather all annotations
-    annotations = [
-        row[9], row[10],  # Annotator 1
-        row[12], row[13],  # Annotator 2
-        row[15], row[16]   # Annotator 3
-    ]
+def process_agreement(input_folder):
+    # Convert input folder to Path object for easier handling
+    input_path = Path(input_folder)
     
-    # Filter out NaN values
-    annotations = [ann for ann in annotations if pd.notna(ann)]
+    # Create a list to store all processed dataframes
+    all_processed_dfs = []
     
-    # Count occurrences of each annotation
-    counter = Counter(annotations)
+    # Iterate through all subfolders in the input folder
+    for subfolder in input_path.iterdir():
+        if not subfolder.is_dir():
+            continue
+            
+        # Skip exactly iterations 0, 1, and 2
+        folder_name = subfolder.name.lower()
+        if folder_name.endswith('_0') or folder_name.endswith('_1') or folder_name.endswith('_2'):
+            continue
+            
+        # Get all relevant annotation files in the subfolder
+        annotation_files = []
+        iteration_prefix = None
+        
+        # Define allowed annotator acronyms
+        #annotators = ['QM', 'MT', 'MO', 'JM', 'XF']
+        annotators = ['gpt-4o','mistral-large-2411','gemini-2.0-flash']
+        
+        for file in subfolder.iterdir():
+            # Check if filename matches pattern 'iteration_X_AA' where AA is one of the allowed annotators
+            parts = file.stem.split('_')
+            if (len(parts) == 3 and 
+                parts[0] == 'iteration' and 
+                parts[2] in annotators):
+                annotation_files.append(file)
+                iteration_prefix = f"{parts[0]}_{parts[1]}"
+        
+        if not annotation_files or len(annotation_files) < 2:
+            continue
+            
+        # Read all annotation files
+        dataframes = []
+        for file in annotation_files:
+            print(file)  # Debug print to see which files we're processing
+            df = pd.read_excel(file)
+            dataframes.append(df)
+            
+        # Get the base columns (non-emotion columns) from the first file
+        base_df = dataframes[0].copy()
+        # Find emotion columns by checking which columns contain '1' in any dataframe
+        emotion_columns = [col for col in base_df.columns 
+                         if any((df[col] == 1).any() for df in dataframes)]
+        
+        # Process agreement for each emotion column
+        for col in emotion_columns:
+            # Count how many annotators marked '1' for each row
+            agreement_count = sum((df[col] == 1) for df in dataframes)
+            # Mark 1 if at least 2 annotators agreed, 0 otherwise
+            base_df[col] = [1 if count >= 2 else 0 for count in agreement_count]
+        
+        # Save the agreement file in the subfolder (both CSV and XLSX)
+        output_file_csv = subfolder / f'{iteration_prefix}_agreement.csv'
+        output_file_xlsx = subfolder / f'{iteration_prefix}_agreement.xlsx'
+        base_df.to_csv(output_file_csv, index=False, quoting=csv.QUOTE_ALL, escapechar='\\')
+        base_df.to_excel(output_file_xlsx, index=False)
+        
+        # Add the processed dataframe to our list
+        all_processed_dfs.append(base_df)
     
-    # Filter annotations appearing at least twice
-    common_annotations = [key for key, count in counter.items() if count >= 2]
-    
-    # Sort by frequency (descending) and then by value (ascending)
-    common_annotations.sort(key=lambda x: (-counter[x], x))
-    
-    # Return most common and second most common values (or None if not available)
-    return (
-        common_annotations[0] if len(common_annotations) > 0 else None,
-        common_annotations[1] if len(common_annotations) > 1 else None
-    )
+    # After processing all subfolders, merge all dataframes and save to root
+    if all_processed_dfs:
+        merged_df = pd.concat(all_processed_dfs, ignore_index=True)
+        
+        # Create compound name from annotators
+        annotator_name = '-'.join(sorted(annotators))  # Sort for consistency
+        merged_output_csv = input_path / f'agreement_{annotator_name}.csv'
+        merged_output_xlsx = input_path / f'agreement_{annotator_name}.xlsx'
+        
+        merged_df.to_csv(merged_output_csv, index=False, quoting=csv.QUOTE_ALL, escapechar='\\')
+        merged_df.to_excel(merged_output_xlsx, index=False)
 
-
-# Step 3: Apply the function to each row and store results in columns 12 and 13
-df['emotion-A-agreement'] = None
-df['emotion-B-agreement'] = None
-
-for index, row in df.iterrows():
-    most_common, second_most_common = get_common_annotations(row)
-    print(most_common, second_most_common)
-    df.at[index, 'emotion-A-agreement'] = most_common
-    df.at[index, 'emotion-B-agreement'] = second_most_common
-
-print(df)
-
-# Step 4: Save the resulting DataFrame to a new CSV (optional)
-output_file = 'data/annotations/iteration_14_agreement.csv'  # Replace with your desired output file name
-df.to_csv(output_file, index=False)
-
-print("Processing complete. Results saved to:", output_file)
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python new_agreement.py <input_folder>")
+        sys.exit(1)
+        
+    input_folder = sys.argv[1]
+    process_agreement(input_folder)
