@@ -1,4 +1,4 @@
-import mistralai
+from mistralai import Mistral
 import pandas as pd
 import json
 import os
@@ -9,9 +9,6 @@ from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
-
-# Initialize Mistral client
-client = mistralai.MistralClient(api_key=os.getenv("MISTRAL_API_KEY"))
 
 def load_assistant_id(model: str) -> str:
     """Load the assistant ID from a model-specific file if it exists."""
@@ -31,24 +28,33 @@ def get_assistant(model: str) -> str:
     
     raise ValueError(f"Assistant ID not found for {model}. Run create_assistant.py first.")
 
-def get_annotation(assistant_id: str, reviews_batch: list) -> list:
+def get_annotation(mistral_client: Mistral, assistant_id: str, reviews_batch: list) -> list:
     """Classify emotions for a batch of reviews."""
     user_prompt = json.dumps(reviews_batch, ensure_ascii=False)
     
     try:
-        response = client.generate(
-            model=assistant_id,
-            prompt=user_prompt,
-            temperature=0.0
+        # Get response from Mistral API
+        response = mistral_client.agents.complete(
+            messages=[{"role": "user", "content": user_prompt}],
+            agent_id=assistant_id,
+            stream=False
         )
         
-        annotations_list = validate_json(response['choices'][0]['message']['content'])
+        # Extract the content from the response
+        content = response.choices[0].message.content
         
-        # Extract token usage if available
-        prompt_tokens = response.get('usage', {}).get('prompt_tokens', 0)
-        completion_tokens = response.get('usage', {}).get('completion_tokens', 0)
-        total_tokens = response.get('usage', {}).get('total_tokens', 0)
+        # Remove JSON code block markers if present
+        content = content.replace('```json', '').replace('```', '').strip()
+        
+        # Parse the JSON content
+        annotations_list = validate_json(content)
+        
+        # Extract token usage
+        prompt_tokens = response.usage.prompt_tokens
+        completion_tokens = response.usage.completion_tokens
+        total_tokens = response.usage.total_tokens
 
+        # Add token information to each annotation
         for annotation in annotations_list:
             annotation["prompt_tokens"] = prompt_tokens // len(annotations_list)
             annotation["completion_tokens"] = completion_tokens // len(annotations_list)
@@ -102,27 +108,32 @@ def main(input_file: str, output_folder: str, batch_size: int = 5, n: int = None
     total_prompt_tokens_used = 0
     total_completion_tokens_used = 0
 
-    for i in range(0, len(df), batch_size):
-        batch_start_time = time.time()
-        batch = df.iloc[i:i + batch_size]
-        print(f"Processing batch {i//batch_size + 1}/{(len(df) + batch_size - 1)//batch_size}")
+    # Initialize Mistral client using context manager
+    with Mistral(api_key=os.getenv("MISTRAL_API_KEY")) as mistral:
+        for i in range(0, len(df), batch_size):
+            batch_start_time = time.time()
+            batch = df.iloc[i:i + batch_size]
+            print(f"Processing batch {i//batch_size + 1}/{(len(df) + batch_size - 1)//batch_size}")
 
-        batch_data = [{"review": row['review'], "sentence": row['sentence']} for _, row in batch.iterrows()]
-        
-        annotations_list = get_annotation(assistant_id, batch_data)
+            batch_data = [{"review": row['review'], "sentence": row['sentence']} for _, row in batch.iterrows()]
+            
+            annotations_list = get_annotation(mistral, assistant_id, batch_data)
 
-        for j, (_, row) in enumerate(batch.iterrows()):
-            if j < len(annotations_list):
-                row.update(annotations_list[j])
-                total_tokens_used += annotations_list[j].get("total_tokens", 0)
-                total_prompt_tokens_used += annotations_list[j].get("prompt_tokens", 0)
-                total_completion_tokens_used += annotations_list[j].get("completion_tokens", 0)
-                results_df = pd.concat([results_df, pd.DataFrame([row])], ignore_index=True)
-                results_df.to_excel(output_file, index=False, engine='openpyxl')
-        
-        batch_time = time.time() - batch_start_time
-        print(f"Batch {i//batch_size + 1} processed in {batch_time:.2f}s")
-        time.sleep(10)
+            for j, (_, row) in enumerate(batch.iterrows()):
+                if j < len(annotations_list):
+                    row.update(annotations_list[j])
+                    total_tokens_used += annotations_list[j].get("total_tokens", 0)
+                    total_prompt_tokens_used += annotations_list[j].get("prompt_tokens", 0)
+                    total_completion_tokens_used += annotations_list[j].get("completion_tokens", 0)
+                    results_df = pd.concat([results_df, pd.DataFrame([row])], ignore_index=True)
+                    results_df.to_excel(output_file, index=False, engine='openpyxl')
+            
+            batch_time = time.time() - batch_start_time
+            print(f"Batch {i//batch_size + 1} processed in {batch_time:.2f}s "
+                  f"(tokens: {sum(a.get('total_tokens', 0) for a in annotations_list)}, "
+                  f"prompt: {sum(a.get('prompt_tokens', 0) for a in annotations_list)}, "
+                  f"completion: {sum(a.get('completion_tokens', 0) for a in annotations_list)})")
+            time.sleep(10)
 
     end_time = datetime.now()
     print(f"Total tokens used: {total_tokens_used}")

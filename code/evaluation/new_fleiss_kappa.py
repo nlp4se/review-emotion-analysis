@@ -9,8 +9,10 @@ import logging
 
 # Fixed list of all possible annotators in specified order
 #all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 'gpt-4o', 'gpt-4o-mini']
-all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 'gpt-4o-mini']
+#all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 'gpt-4o-mini']
 #all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 'gpt-4o']
+all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 'mistral-large-2411']
+#all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 'gemini']
 
 def get_annotation_data(folder_path, exclude_iterations=None):
     """Extract annotation data from all iteration folders."""

@@ -99,7 +99,14 @@ def analyze_emotion_annotations(xlsx_path):
     # Save numerical statistics to text file
     with open(output_dir / 'statistics_summary.txt', 'w') as f:
         f.write("Emotion Distribution:\n")
-        f.write(emotion_counts.sort_values(ascending=False).to_string())
+        # Calculate and display counts and percentages
+        total_emotions = emotion_counts.sum()
+        distribution_with_pct = pd.DataFrame({
+            'Count': emotion_counts,
+            'Percentage': (emotion_counts / total_emotions * 100).round(2)
+        }).sort_values('Count', ascending=False)
+        f.write(distribution_with_pct.to_string())
+        
         f.write("\n\nEmotions per Review Statistics:\n")
         f.write(emotions_per_review.describe().to_string())
         
