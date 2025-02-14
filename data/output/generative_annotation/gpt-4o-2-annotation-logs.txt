@@ -1,0 +1,232 @@
+Starting annotation process at 2025-02-14 15:34:55
+Reusing existing assistant ID for gpt-4o: asst_6LhouDPy9dxR2CSTpFDNJNis
+Processing batch 1/112
+Batch 1 processed (Time: 10.38s, Tokens: 6800, Prompt Tokens: 6330, Completion Tokens: 460)
+Processing batch 2/112
+Batch 2 processed (Time: 13.07s, Tokens: 13430, Prompt Tokens: 12490, Completion Tokens: 920)
+Processing batch 3/112
+Batch 3 processed (Time: 9.71s, Tokens: 20360, Prompt Tokens: 18950, Completion Tokens: 1380)
+Processing batch 4/112
+Batch 4 processed (Time: 13.26s, Tokens: 27050, Prompt Tokens: 25170, Completion Tokens: 1840)
+Processing batch 5/112
+Batch 5 processed (Time: 10.99s, Tokens: 34000, Prompt Tokens: 31660, Completion Tokens: 2300)
+Processing batch 6/112
+Batch 6 processed (Time: 12.26s, Tokens: 40890, Prompt Tokens: 38080, Completion Tokens: 2760)
+Processing batch 7/112
+Batch 7 processed (Time: 12.84s, Tokens: 47510, Prompt Tokens: 44230, Completion Tokens: 3220)
+Processing batch 8/112
+Batch 8 processed (Time: 13.19s, Tokens: 54300, Prompt Tokens: 50550, Completion Tokens: 3680)
+Processing batch 9/112
+Batch 9 processed (Time: 9.90s, Tokens: 60970, Prompt Tokens: 56760, Completion Tokens: 4140)
+Processing batch 10/112
+Batch 10 processed (Time: 11.11s, Tokens: 67710, Prompt Tokens: 63040, Completion Tokens: 4600)
+Processing batch 11/112
+Batch 11 processed (Time: 10.26s, Tokens: 74580, Prompt Tokens: 69440, Completion Tokens: 5060)
+Processing batch 12/112
+Batch 12 processed (Time: 10.05s, Tokens: 81320, Prompt Tokens: 75710, Completion Tokens: 5520)
+Processing batch 13/112
+Batch 13 processed (Time: 9.52s, Tokens: 88214, Prompt Tokens: 82181, Completion Tokens: 5934)
+Processing batch 14/112
+Batch 14 processed (Time: 10.27s, Tokens: 95164, Prompt Tokens: 88661, Completion Tokens: 6394)
+Processing batch 15/112
+Batch 15 processed (Time: 9.55s, Tokens: 101954, Prompt Tokens: 94991, Completion Tokens: 6854)
+Processing batch 16/112
+Batch 16 processed (Time: 13.29s, Tokens: 108884, Prompt Tokens: 101461, Completion Tokens: 7314)
+Processing batch 17/112
+Batch 17 processed (Time: 11.56s, Tokens: 115994, Prompt Tokens: 108111, Completion Tokens: 7774)
+Processing batch 18/112
+Batch 18 processed (Time: 12.49s, Tokens: 122734, Prompt Tokens: 114381, Completion Tokens: 8234)
+Processing batch 19/112
+Batch 19 processed (Time: 10.61s, Tokens: 129844, Prompt Tokens: 121021, Completion Tokens: 8694)
+Processing batch 20/112
+Batch 20 processed (Time: 12.38s, Tokens: 136747, Prompt Tokens: 127501, Completion Tokens: 9108)
+Processing batch 21/112
+Batch 21 processed (Time: 11.03s, Tokens: 143547, Prompt Tokens: 133841, Completion Tokens: 9568)
+Processing batch 22/112
+Batch 22 processed (Time: 12.48s, Tokens: 150427, Prompt Tokens: 140261, Completion Tokens: 10028)
+Processing batch 23/112
+Batch 23 processed (Time: 12.62s, Tokens: 157267, Prompt Tokens: 146631, Completion Tokens: 10488)
+Processing batch 24/112
+Batch 24 processed (Time: 12.73s, Tokens: 164197, Prompt Tokens: 153091, Completion Tokens: 10948)
+Processing batch 25/112
+Batch 25 processed (Time: 13.49s, Tokens: 171197, Prompt Tokens: 159631, Completion Tokens: 11408)
+Processing batch 26/112
+Batch 26 processed (Time: 9.97s, Tokens: 178047, Prompt Tokens: 166011, CompletioBatch 22 processed (Time: 12.48s, Tokens: 150427, Prompt Tokens: 140261, Completion Tokens: 10028) 7/112
+Processing batch 23/112
+Batch 23 processed (Time: 12.62s, Tokens: 157267, Prompt Tokens: 146631, Completion Tokens: 10488) 8/112
+Processing batch 24/112
+Batch 24 processed (Time: 12.73s, Tokens: 164197, Prompt Tokens: 153091, Completion Tokens: 10948) 9/112
+Processing batch 25/112
+Batch 25 processed (Time: 13.49s, Tokens: 171197, Prompt Tokens: 159631, Completion Tokens: 11408) 0/112
+Processing batch 26/112
+Batch 26 processed (Time: 9.97s, Tokens: 178047, Prompt Tokens: 166011, CompletioBatch 22 processed (Time: 12.48s, Tokens: 150427, Prompt Tokens: 140261, Completion Tokens: 10028)27/112
+Processing batch 23/112
+Batch 23 processed (Time: 12.62s, Tokens: 157267, Prompt Tokens: 146631, Completion Tokens: 10488)28/112
+Processing batch 24/112
+Batch 24 processed (Time: 12.73s, Tokens: 164197, Prompt Tokens: 153091, Completion Tokens: 10948)29/112
+Processing batch 25/112
+Batch 25 processed (Time: 13.49s, Tokens: 171197, Prompt Tokens: 159631, Completion Tokens: 11408)30/112
+Processing batch 26/112
+Batch 26 processed (Time: 9.97s, Tokens: 178047, Prompt Tokens: 166011, Completio8)
+Processing batch 27/112
+Batch 27 processed (Time: 12.84s, Tokens: 184857, Prompt Tokens: 172351, Completion Tokens: 12328)
+Processing batch 28/112
+Batch 28 processed (Time: 22.38s, Tokens: 191567, Prompt Tokens: 178601, Completion Tokens: 12788)
+Processing batch 29/112
+Batch 29 processed (Time: 11.69s, Tokens: 198577, Prompt Tokens: 185151, Completion Tokens: 13248)
+Processing batch 30/112
+Batch 30 processed (Time: 12.41s, Tokens: 205397, Prompt Tokens: 191501, Completion Tokens: 13708)
+Processing batch 31/112
+Batch 31 processed (Time: 15.43s, Tokens: 212507, Prompt Tokens: 198141, Completion Tokens: 14168)
+Processing batch 32/112
+Batch 32 processed (Time: 15.86s, Tokens: 219367, Prompt Tokens: 204541, Completion Tokens: 14628)
+Processing batch 33/112
+Batch 33 processed (Time: 24.13s, Tokens: 225917, Prompt Tokens: 210631, Completion Tokens: 15088)
+Processing batch 34/112
+Batch 34 processed (Time: 12.07s, Tokens: 232467, Prompt Tokens: 216711, Completion Tokens: 15548)
+Processing batch 35/112
+Batch 35 processed (Time: 14.12s, Tokens: 239207, Prompt Tokens: 222991, Completion Tokens: 16008)
+Processing batch 36/112
+Batch 36 processed (Time: 21.32s, Tokens: 245887, Prompt Tokens: 229211, Completion Tokens: 16468)
+Processing batch 37/112
+Batch 37 processed (Time: 16.16s, Tokens: 252827, Prompt Tokens: 235681, Completion Tokens: 16928)
+Processing batch 38/112
+Batch 38 processed (Time: 20.80s, Tokens: 259877, Prompt Tokens: 242271, Completion Tokens: 17388)
+Processing batch 39/112
+Batch 39 processed (Time: 10.19s, Tokens: 266607, Prompt Tokens: 248531, Completion Tokens: 17848)
+Processing batch 40/112
+Batch 40 processed (Time: 10.79s, Tokens: 273467, Prompt Tokens: 254921, Completion Tokens: 18308)
+Processing batch 41/112
+Batch 41 processed (Time: 13.43s, Tokens: 280187, Prompt Tokens: 261181, Completion Tokens: 18768)
+Processing batch 42/112
+Batch 42 processed (Time: 18.71s, Tokens: 286747, Prompt Tokens: 267271, Completion Tokens: 19228)
+Processing batch 43/112
+Batch 43 processed (Time: 9.65s, Tokens: 293567, Prompt Tokens: 273631, Completion Tokens: 19688)
+Processing batch 44/112
+Batch 44 processed (Time: 12.79s, Tokens: 300287, Prompt Tokens: 279891, Completion Tokens: 20148)
+Processing batch 45/112
+Batch 45 processed (Time: 12.82s, Tokens: 307047, Prompt Tokens: 286181, Completion Tokens: 20608)
+Processing batch 46/112
+Batch 46 processed (Time: 10.25s, Tokens: 313857, Prompt Tokens: 292521, Completion Tokens: 21068)
+Processing batch 47/112
+Batch 47 processed (Time: 12.47s, Tokens: 320767, Prompt Tokens: 298961, Completion Tokens: 21528)
+Processing batch 48/112
+Batch 48 processed (Time: 11.96s, Tokens: 328037, Prompt Tokens: 305761, Completion Tokens: 21988)
+Processing batch 49/112
+Batch 49 processed (Time: 12.36s, Tokens: 335297, Prompt Tokens: 312561, Completion Tokens: 22448)
+Processing batch 50/112
+Batch 50 processed (Time: 10.02s, Tokens: 341967, Prompt Tokens: 318761, Completion Tokens: 22908)
+Processing batch 51/112
+Batch 51 processed (Time: 10.94s, Tokens: 348887, Prompt Tokens: 325211, Completion Tokens: 23368)
+Processing batch 52/112
+Batch 52 processed (Time: 10.22s, Tokens: 355577, Prompt Tokens: 331431, Completion Tokens: 23828)
+Processing batch 53/112
+Batch 53 processed (Time: 10.21s, Tokens: 362457, Prompt Tokens: 337841, Completion Tokens: 24288)
+Processing batch 54/112
+Batch 54 processed (Time: 15.41s, Tokens: 369057, Prompt Tokens: 343971, Completion Tokens: 24748)
+Processing batch 55/112
+Batch 55 processed (Time: 9.98s, Tokens: 375978, Prompt Tokens: 350469, Completion Tokens: 25162)
+Processing batch 56/112
+Batch 56 processed (Time: 12.99s, Tokens: 382748, Prompt Tokens: 356769, Completion Tokens: 25622)
+Processing batch 57/112
+Batch 57 processed (Time: 14.95s, Tokens: 389558, Prompt Tokens: 363119, Completion Tokens: 26082)
+Processing batch 58/112
+Batch 58 processed (Time: 13.45s, Tokens: 396398, Prompt Tokens: 369489, Completion Tokens: 26542)
+Processing batch 59/112
+Batch 59 processed (Time: 15.98s, Tokens: 403148, Prompt Tokens: 375769, Completion Tokens: 27002)
+Processing batch 60/112
+Batch 60 processed (Time: 12.79s, Tokens: 409928, Prompt Tokens: 382089, Completion Tokens: 27462)
+Processing batch 65/112
+Warning: Failed to parse JSON: Extra data: line 1 column 1174 (char 1173)
+{"reviews":[{"Joy":0,"Trust":0,"Fear":0,"Surprise":0,"Sadness":0,"Disgust":1,"Anger":0,"Anticipation":0,"Neutral":0,"Reject":0},{"Joy":1,"Trust":0,"Fear":0,"Surprise":0,"Sadness":0,"Disgust":0,"Anger":0,"Anticipation":0,"Neutral":0,"Reject":0},{"Joy":0,"Trust":0,"Fear":0,"Surprise":0,"Sadness":0,"Disgust":0,"Anger":0,"Anticipation":1,"Neutral":0,"Reject":0},{"Joy":0,"Trust":0,"Fear":1,"Surprise":0,"Sadness":0,"Disgust":0,"Anger":0,"Anticipation":0,"Neutral":0,"Reject":0},{"Joy":0,"Trust":0,"Fear":0,"Surprise":0,"Sadness":1,"Disgust":0,"Anger":0,"Anticipation":0,"Neutral":0,"Reject":0},{"Joy":1,"Trust":0,"Fear":0,"Surprise":0,"Sadness":0,"Disgust":0,"Anger":0,"Anticipation":0,"Neutral":0,"Reject":0},{"Joy":1,"Trust":0,"Fear":0,"Surprise":0,"Sadness":0,"Disgust":0,"Anger":0,"Anticipation":1,"Neutral":0,"Reject":0},{"Joy":0,"Trust":0,"Fear":0,"Surprise":0,"Sadness":1,"Disgust":0,"Anger":0,"Anticipation":0,"Neutral":0,"Reject":0},{"Joy":1,"Trust":1,"Fear":0,"Surprise":0,"Sadness":0,"Disgust":0,"Anger":0,"Anticipation":0,"Neutral":0,"Reject":0},{"Joy":0,"Trust":0,"Fear":0,"Surprise":0,"Sadness":0,"Disgust":0,"Anger":0,"Anticipation":0,"Neutral":1,"Reject":0}]}}
+Batch 65 processed (Time: 21.17s, Tokens: 443495, Prompt Tokens: 413330, Completion Tokens: 29768)
+Processing batch 66/112
+Batch 66 processed (Time: 13.56s, Tokens: 450435, Prompt Tokens: 419800, Completion Tokens: 30228)
+Processing batch 67/112
+Batch 67 processed (Time: 12.76s, Tokens: 457265, Prompt Tokens: 426160, Completion Tokens: 30688)
+Processing batch 68/112
+Batch 68 processed (Time: 12.97s, Tokens: 463895, Prompt Tokens: 432320, Completion Tokens: 31148)
+Processing batch 69/112
+Batch 69 processed (Time: 12.37s, Tokens: 470795, Prompt Tokens: 438760, Completion Tokens: 31608)
+Processing batch 70/112
+Batch 70 processed (Time: 14.24s, Tokens: 477655, Prompt Tokens: 445160, Completion Tokens: 32068)
+Processing batch 71/112
+Batch 71 processed (Time: 14.27s, Tokens: 484295, Prompt Tokens: 451330, Completion Tokens: 32528)
+Processing batch 72/112
+Batch 72 processed (Time: 17.41s, Tokens: 490875, Prompt Tokens: 457440, Completion Tokens: 32988)
+Processing batch 73/112
+Batch 73 processed (Time: 14.29s, Tokens: 497775, Prompt Tokens: 463870, Completion Tokens: 33448)
+Processing batch 74/112
+Batch 74 processed (Time: 12.76s, Tokens: 504625, Prompt Tokens: 470260, Completion Tokens: 33908)
+Processing batch 75/112
+Batch 75 processed (Time: 13.87s, Tokens: 511375, Prompt Tokens: 476540, Completion Tokens: 34368)
+Processing batch 76/112
+Batch 76 processed (Time: 16.14s, Tokens: 518245, Prompt Tokens: 482940, Completion Tokens: 34828)
+Processing batch 77/112
+Batch 77 processed (Time: 15.87s, Tokens: 524935, Prompt Tokens: 489170, Completion Tokens: 35288)
+Processing batch 78/112
+Batch 78 processed (Time: 12.28s, Tokens: 531515, Prompt Tokens: 495280, Completion Tokens: 35748)
+Processing batch 79/112
+Batch 79 processed (Time: 12.73s, Tokens: 538185, Prompt Tokens: 501480, Completion Tokens: 36208)
+Processing batch 80/112
+ Tokens: 532949, Completion Tokens: 38462)
+Processing batch 85/112
+Batch 85 processed (Time: 10.89s, Tokens: 578748, Prompt Tokens: 539309, Completion Tokens: 38922)
+Processing batch 86/112
+Batch 86 processed (Time: 12.46s, Tokens: 585568, Prompt Tokens: 545659, Completion Tokens: 39382)
+Processing batch 87/112
+Batch 87 processed (Time: 11.04s, Tokens: 592668, Prompt Tokens: 552289, Completion Tokens: 39842)
+Processing batch 88/112
+Batch 88 processed (Time: 12.92s, Tokens: 599348, Prompt Tokens: 558499, Completion Tokens: 40302)
+Processing batch 89/112
+Batch 89 processed (Time: 15.51s, Tokens: 606278, Prompt Tokens: 564959, Completion Tokens: 40762)
+Processing batch 90/112
+Batch 90 processed (Time: 12.32s, Tokens: 613148, Prompt Tokens: 571359, Completion Tokens: 41222)
+Processing batch 91/112
+Batch 91 processed (Time: 14.64s, Tokens: 620148, Prompt Tokens: 577899, Completion Tokens: 41682)
+Processing batch 92/112
+Batch 92 processed (Time: 14.84s, Tokens: 626868, Prompt Tokens: 584149, Completion Tokens: 42142)
+Processing batch 93/112
+Batch 93 processed (Time: 15.31s, Tokens: 633458, Prompt Tokens: 590269, Completion Tokens: 42602)
+Processing batch 94/112
+Batch 94 processed (Time: 25.88s, Tokens: 640378, Prompt Tokens: 596729, Completion Tokens: 43062)
+Processing batch 95/112
+Batch 95 processed (Time: 14.67s, Tokens: 647028, Prompt Tokens: 602909, Completion Tokens: 43522)
+Processing batch 96/112
+Batch 96 processed (Time: 15.73s, Tokens: 653848, Prompt Tokens: 609259, Completion Tokens: 43982)
+Processing batch 97/112
+Batch 97 processed (Time: 13.54s, Tokens: 660748, Prompt Tokens: 615699, Completion Tokens: 44442)
+Processing batch 98/112
+Batch 98 processed (Time: 12.91s, Tokens: 667408, Prompt Tokens: 621899, Completion Tokens: 44902)
+Processing batch 99/112
+Batch 99 processed (Time: 15.29s, Tokens: 674258, Prompt Tokens: 628279, Completion Tokens: 45362)
+Processing batch 100/112
+Batch 100 processed (Time: 14.61s, Tokens: 681068, Prompt Tokens: 634629, Completion Tokens: 45822)
+Processing batch 101/112
+Batch 101 processed (Time: 17.32s, Tokens: 687768, Prompt Tokens: 640869, Completion Tokens: 46282)
+Processing batch 102/112
+Batch 102 processed (Time: 15.24s, Tokens: 694628, Prompt Tokens: 647269, Completion Tokens: 46742)
+Processing batch 103/112
+Batch 103 processed (Time: 15.50s, Tokens: 701518, Prompt Tokens: 653689, Completion Tokens: 47202)
+Processing batch 104/112
+Batch 104 processed (Time: 14.96s, Tokens: 708248, Prompt Tokens: 659949, Completion Tokens: 47662)
+Processing batch 105/112
+Batch 105 processed (Time: 12.54s, Tokens: 714808, Prompt Tokens: 666049, Completion Tokens: 48122)
+Processing batch 106/112
+Batch 106 processed (Time: 13.46s, Tokens: 721608, Prompt Tokens: 672389, Completion Tokens: 48582)
+Processing batch 107/112
+Batch 107 processed (Time: 14.90s, Tokens: 728378, Prompt Tokens: 678699, Completion Tokens: 49042)
+Processing batch 108/112
+Batch 108 processed (Time: 12.42s, Tokens: 735188, Prompt Tokens: 685049, Completion Tokens: 49502)
+Processing batch 109/112
+Batch 109 processed (Time: 12.99s, Tokens: 741978, Prompt Tokens: 691379, Completion Tokens: 49962)
+Processing batch 110/112
+Batch 110 processed (Time: 12.62s, Tokens: 748588, Prompt Tokens: 697519, Completion Tokens: 50422)
+Processing batch 111/112
+Batch 111 processed (Time: 12.49s, Tokens: 755398, Prompt Tokens: 703869, Completion Tokens: 50882)
+Processing batch 112/112
+Batch 112 processed (Time: 7.48s, Tokens: 761318, Prompt Tokens: 709691, Completion Tokens: 50980)
+Total tokens used: 761318
+Total prompt tokens used: 709691
+Total completion tokens used: 50980
+Annotation process complete.

@@ -86,7 +86,11 @@ def get_chat_model(guidelines_path: str):
 
     return model.start_chat(history=[])
 
-def get_annotation(chat_session, reviews_batch: list) -> tuple:
+def has_all_zeros(annotation: dict) -> bool:
+    """Check if all emotion values in an annotation are 0."""
+    return all(int(value) == 0 for key, value in annotation.items())
+
+def get_annotation(chat_session, reviews_batch: list, guidelines_path: str) -> tuple:
     """Classify emotions for a batch of reviews using the chat session."""
     try:
         # Convert batch to JSON string
@@ -101,15 +105,14 @@ def get_annotation(chat_session, reviews_batch: list) -> tuple:
         # Parse and validate the JSON content
         annotations_list = validate_json(content)
         
-        # Extract usage metadata from the correct location
+        # Extract usage metadata
         usage_metadata = {
             'prompt_tokens': response.usage_metadata.prompt_token_count,
             'completion_tokens': response.usage_metadata.candidates_token_count,
             'total_tokens': response.usage_metadata.total_token_count
         }
-        
         return annotations_list, usage_metadata
-
+            
     except Exception as e:
         print(f"Error processing batch: {e}")
         default_annotation = {emotion: 0 for emotion in ['Joy', 'Trust', 'Fear', 'Surprise', 'Sadness', 
@@ -117,27 +120,21 @@ def get_annotation(chat_session, reviews_batch: list) -> tuple:
         default_usage = {'prompt_tokens': 0, 'completion_tokens': 0, 'total_tokens': 0}
         return [default_annotation] * len(reviews_batch), default_usage
 
-def validate_json(response_text: str) -> list:
-    """Ensure the response is a valid JSON object with a 'reviews' array matching the expected schema."""
-    expected_emotions = ['Joy', 'Trust', 'Fear', 'Surprise', 'Sadness', 
-                         'Disgust', 'Anger', 'Anticipation', 'Neutral', 'Reject']
-    
+def validate_json(content: str) -> list:
+    """Validate and parse the JSON content, converting string values to integers."""
     try:
-        response_json = json.loads(response_text.strip())
-        
-        if not isinstance(response_json, list):
-            raise ValueError("Response is not a list")
-        
-        for annotation in response_json:
-            for emotion in expected_emotions:
-                if emotion not in annotation or not isinstance(annotation[emotion], int):
-                    annotation[emotion] = 0
-
-        return response_json
-
-    except (json.JSONDecodeError, ValueError) as e:
-        print(f"Warning: Failed to parse JSON: {e}")
-        return [{emotion: 0 for emotion in expected_emotions}]
+        annotations = json.loads(content)
+        # Convert string values to integers
+        for annotation in annotations:
+            for key in annotation:
+                annotation[key] = int(annotation[key])
+        return annotations
+    except json.JSONDecodeError as e:
+        print(f"JSON decode error: {e}")
+        raise
+    except ValueError as e:
+        print(f"Value conversion error: {e}")
+        raise
 
 def main(input_file: str, output_folder: str, batch_size: int = 5, n: int = None, model: str = "gemini-2.0-flash", guidelines_path: str = 'guidelines.txt'):
     start_time = datetime.now()
@@ -173,7 +170,7 @@ def main(input_file: str, output_folder: str, batch_size: int = 5, n: int = None
 
         batch_data = [{"review": row['review'], "sentence": row['sentence']} for _, row in batch.iterrows()]
         
-        annotations_list, usage_metadata = get_annotation(chat_session, batch_data)
+        annotations_list, usage_metadata = get_annotation(chat_session, batch_data, guidelines_path)
 
         # Update metrics
         batch_metrics = {

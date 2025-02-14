@@ -27,7 +27,7 @@ def process_agreement(input_folder):
         
         # Define allowed annotator acronyms
         #annotators = ['QM', 'MT', 'MO', 'JM', 'XF']
-        annotators = ['gpt-4o','mistral-large-2411','gemini-2.0-flash']
+        annotators = ['gpt-4o','mistral-large-2411','gemini-2-0-flash']
         
         for file in subfolder.iterdir():
             # Check if filename matches pattern 'iteration_X_AA' where AA is one of the allowed annotators
@@ -44,22 +44,26 @@ def process_agreement(input_folder):
         # Read all annotation files
         dataframes = []
         for file in annotation_files:
-            print(file)  # Debug print to see which files we're processing
+            print(f"Reading file: {file}")  # Enhanced debug print
             df = pd.read_excel(file)
+            print(f"Shape after reading: {df.shape}")  # Print shape after reading
             dataframes.append(df)
             
         # Get the base columns (non-emotion columns) from the first file
         base_df = dataframes[0].copy()
-        # Find emotion columns by checking which columns contain '1' in any dataframe
-        emotion_columns = [col for col in base_df.columns 
-                         if any((df[col] == 1).any() for df in dataframes)]
+        print(f"Base DataFrame shape: {base_df.shape}")  # Print shape of base_df
+        
+        # Define emotion columns as columns K through T
+        emotion_columns = base_df.columns[10:20]  # Columns K (index 10) through T (index 19)
+        print(f"Emotion columns found: {emotion_columns}")  # Print found emotion columns
         
         # Process agreement for each emotion column
         for col in emotion_columns:
             # Count how many annotators marked '1' for each row
-            agreement_count = sum((df[col] == 1) for df in dataframes)
+            agreement_count = sum(df[col].reset_index(drop=True) == 1 for df in dataframes)
             # Mark 1 if at least 2 annotators agreed, 0 otherwise
             base_df[col] = [1 if count >= 2 else 0 for count in agreement_count]
+            print(f"After processing {col}, shape: {base_df.shape}")  # Print shape after each column
         
         # Save the agreement file in the subfolder (both CSV and XLSX)
         output_file_csv = subfolder / f'{iteration_prefix}_agreement.csv'

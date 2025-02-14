@@ -11,8 +11,10 @@ import logging
 #all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 'gpt-4o', 'gpt-4o-mini']
 #all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 'gpt-4o-mini']
 #all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 'gpt-4o']
-all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 'mistral-large-2411']
-#all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 'gemini']
+#all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 'mistral-large-2411']
+#all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 'gemini-2-0-flash']
+#all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF']
+all_annotators = ['gpt-4o', 'mistral-large-2411', 'gemini-2-0-flash']
 
 def get_annotation_data(folder_path, exclude_iterations=None):
     """Extract annotation data from all iteration folders."""
@@ -303,8 +305,8 @@ def main():
     
     if len(sys.argv) < 2:
         logging.error("Invalid number of arguments")
-        print("Usage: python new_fleiss_kappa.py <folder_path> [excluded_iterations]")
-        print("Example: python new_fleiss_kappa.py ./data 0,1,2")
+        print("Usage: python kappa_analysis.py <folder_path> [excluded_iterations]")
+        print("Example: python kappa_analysis.py ./data 0,1,2")
         sys.exit(1)
     
     folder_path = sys.argv[1]

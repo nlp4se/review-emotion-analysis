@@ -101,8 +101,22 @@ def calculate_metrics(ground_truth_data, prediction_data, emotion_labels):
     results = []
     
     for emotion in emotion_labels:
-        y_true = ground_truth_data[emotion].values
-        y_pred = prediction_data[emotion].values
+        # Log non-binary values
+        gt_unique = ground_truth_data[emotion].unique()
+        pred_unique = prediction_data[emotion].unique()
+        
+        if not all(val in [0, 1] for val in gt_unique):
+            print(f"Non-binary values found in ground truth for {emotion}: {gt_unique}")
+        if not all(val in [0, 1] for val in pred_unique):
+            print(f"Non-binary values found in predictions for {emotion}: {pred_unique}")
+        
+        # Convert to numeric and fill NaN with 0
+        y_true = pd.to_numeric(ground_truth_data[emotion], errors='coerce').fillna(0).astype(int)
+        y_pred = pd.to_numeric(prediction_data[emotion], errors='coerce').fillna(0).astype(int)
+        
+        # Ensure values are binary (0 or 1)
+        y_true = (y_true > 0).astype(int)
+        y_pred = (y_pred > 0).astype(int)
         
         accuracy = accuracy_score(y_true, y_pred)
         precision, recall, f1, _ = precision_recall_fscore_support(y_true, y_pred, average='binary')
