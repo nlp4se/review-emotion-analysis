@@ -22,7 +22,7 @@ def create_iteration_directory(output_dir, iteration):
     return iteration_dir
 
 def split_annotations(input_file, output_dir):
-    # Read the Excel file
+    # Read the Excel file - explicitly keep all rows including duplicates
     df = pd.read_excel(input_file)
     
     # Get base filename for output files
@@ -30,6 +30,7 @@ def split_annotations(input_file, output_dir):
     
     # Group by iteration and save to separate files
     for iteration, group in df.groupby('iteration'):
+        
         # Create iteration directory
         iteration_dir = create_iteration_directory(output_dir, iteration)
         
@@ -37,7 +38,7 @@ def split_annotations(input_file, output_dir):
         output_filename = f'{iteration}_{base_filename}.xlsx'
         output_path = os.path.join(iteration_dir, output_filename)
         
-        # Save the group to a new Excel file
+        # Save the group to a new Excel file, ensuring to keep all rows
         group.to_excel(output_path, index=False)
         print(f"Created {output_path}")
 

@@ -14,7 +14,10 @@ import logging
 #all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 'mistral-large-2411']
 #all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 'gemini-2-0-flash']
 #all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF']
-all_annotators = ['gpt-4o', 'mistral-large-2411', 'gemini-2-0-flash']
+#all_annotators = ['gpt-4o', 'mistral-large-2411', 'gemini-2-0-flash']
+#all_annotators = ['gpt-4o-1','gpt-4o-2','gpt-4o-3']
+#all_annotators = ['mistral-large-2411-1','mistral-large-2411-2','mistral-large-2411-3']
+all_annotators = ['gemini-2-0-flash-1','gemini-2-0-flash-2','gemini-2-0-flash-3']
 
 def get_annotation_data(folder_path, exclude_iterations=None):
     """Extract annotation data from all iteration folders."""
@@ -333,7 +336,8 @@ def main():
         iterations_data = get_annotation_data(folder_path, exclude_iterations)
         
         # Create and save report
-        output_path = os.path.join(folder_path, 'agreement-statistics.xlsx')
+        annotators_str = '-'.join(all_annotators)  # Join annotator names with hyphens
+        output_path = os.path.join(folder_path, f'agreement-statistics-{annotators_str}.xlsx')
         logging.info(f"Creating Excel report at: {output_path}")
         create_excel_report(iterations_data, output_path)
         logging.info("Processing completed successfully")

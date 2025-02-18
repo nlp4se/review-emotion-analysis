@@ -14,7 +14,8 @@ def analyze_emotion_annotations(xlsx_path):
     emotion_cols = df.iloc[:, 10:20]  # 0-based indexing for columns J to S
     
     # Create output directory in same location as input file
-    output_dir = Path(xlsx_path).parent / 'analysis_output'
+    input_path = Path(xlsx_path)
+    output_dir = input_path.parent / f'analysis_output_{input_path.stem}'
     output_dir.mkdir(exist_ok=True)
     
     # 1. Create pie chart of emotion distribution
