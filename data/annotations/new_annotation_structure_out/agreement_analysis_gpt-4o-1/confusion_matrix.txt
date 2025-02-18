@@ -1,0 +1,15 @@
+Confusion Matrix:
+Rows: Ground Truth, Columns: Predictions
+
+	Joy	Sadness	Anticipation	Trust	Neutral	Surprise	Disgust	Anger	Fear	Reject	None
+Joy	241	28	44	28	51	2	7	0	2	2	0
+Sadness	11	213	21	5	10	15	17	8	13	2	0
+Anticipation	23	22	155	3	6	0	2	1	0	1	0
+Trust	97	3	7	76	10	0	0	0	0	0	0
+Neutral	7	4	14	6	50	5	2	0	0	0	0
+Surprise	0	26	7	0	3	6	6	1	6	0	0
+Disgust	0	19	4	0	0	1	24	6	0	0	0
+Anger	0	8	1	0	0	0	7	11	0	1	0
+Fear	0	1	0	0	3	0	13	0	7	0	0
+Reject	0	0	0	0	4	1	0	0	1	17	0
+None	0	0	0	0	0	0	0	0	0	0	0
