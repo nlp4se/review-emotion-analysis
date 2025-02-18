@@ -24,7 +24,16 @@ def load_and_process_data(file_path):
     
     df = pd.read_excel(file_path, engine=engine)
     # Select columns J to S (emotion annotations)
-    return df.iloc[:, 10:20]  # 0-based indexing for columns J to S
+    raw_data = df.iloc[:, 10:20]  # 0-based indexing for columns J to S
+    
+    # Define the desired column order
+    emotion_order = [
+        'Joy', 'Sadness', 'Anticipation', 'Trust', 'Neutral',
+        'Surprise', 'Disgust', 'Anger', 'Fear', 'Reject'
+    ]
+    
+    # Reorder columns
+    return raw_data[emotion_order]
 
 def create_confusion_matrices(ground_truth_data, prediction_data, emotion_labels, output_dir):
     # Convert the binary columns into a single column with emotion labels
@@ -171,7 +180,11 @@ def main():
     ground_truth_data = load_and_process_data(args.ground_truth)
     prediction_data = load_and_process_data(args.predictions)
     
-    emotion_labels = ground_truth_data.columns
+    # Define emotion labels in desired order
+    emotion_labels = [
+        'Joy', 'Sadness', 'Anticipation', 'Trust', 'Neutral',
+        'Surprise', 'Disgust', 'Anger', 'Fear', 'Reject'
+    ]
     
     # Generate confusion matrices and save numerical data
     create_confusion_matrices(ground_truth_data, prediction_data, emotion_labels, args.output_dir)

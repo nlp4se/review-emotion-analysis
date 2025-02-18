@@ -6,6 +6,8 @@ from sklearn.metrics import cohen_kappa_score
 from openpyxl import Workbook
 from openpyxl.styles import Font
 import logging
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 # Fixed list of all possible annotators in specified order
 #all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 'gpt-4o', 'gpt-4o-mini']
@@ -17,7 +19,14 @@ import logging
 #all_annotators = ['gpt-4o', 'mistral-large-2411', 'gemini-2-0-flash']
 #all_annotators = ['gpt-4o-1','gpt-4o-2','gpt-4o-3']
 #all_annotators = ['mistral-large-2411-1','mistral-large-2411-2','mistral-large-2411-3']
-all_annotators = ['gemini-2-0-flash-1','gemini-2-0-flash-2','gemini-2-0-flash-3']
+#all_annotators = ['gemini-2-0-flash-1','gemini-2-0-flash-2','gemini-2-0-flash-3']
+all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 
+                  'agreement_JM-MO-MT-QM-XF', 
+                  'agreement_gpt-4o-1-gpt-4o-2-gpt-4o-3',
+                  'agreement_mistral-large-2411-1-mistral-large-2411-2-mistral-large-2411-3',
+                  'agreement_gemini-2-0-flash-1-gemini-2-0-flash-2-gemini-2-0-flash-3', 
+                  'agreement_gemini-2-0-flash-1-gemini-2-0-flash-2-gemini-2-0-flash-3-gpt-4o-1-gpt-4o-2-gpt-4o-3-mistral-large-2411-1-mistral-large-2411-2-mistral-large-2411-3']
+heatmap_tags = ['H_1', 'H_2', 'H_3', 'H_4', 'H_5', 'H_A', 'GPT_A', 'Mistral_A', 'Gemini_A', 'LLM_A']
 
 def get_annotation_data(folder_path, exclude_iterations=None):
     """Extract annotation data from all iteration folders."""
@@ -47,8 +56,8 @@ def get_annotation_data(folder_path, exclude_iterations=None):
                     if file.endswith('.xlsx'):
                         logging.info(f"Processing annotation file: {file}")
                         try:
-                            # Extract annotator code from filename (e.g., 'QM' from 'iteration_0_QM.xlsx')
-                            annotator = file.split('_')[2].split('.')[0]
+                            # Extract annotator code from filename, joining all parts after iteration_X_ except the file extension
+                            annotator = '_'.join(file.split('_')[2:]).split('.')[0]
 
                             if annotator != 'agreement' and annotator != 'discussion':
                                 file_path = os.path.join(iteration_folder, file)
@@ -177,6 +186,74 @@ def calculate_fleiss_kappa_for_iteration(annotations):
     
     return kappa
 
+def create_agreement_heatmap(all_pair_kappas, all_annotators, output_path):
+    # Create the matrix for the heatmap
+    n = len(all_annotators)
+    matrix = np.zeros((n, n))
+    
+    # Fill the matrix
+    for i, ann1 in enumerate(all_annotators):
+        for j, ann2 in enumerate(all_annotators):
+            if ann1 == ann2:
+                matrix[i, j] = 1.0
+            else:
+                # Try both orderings of the pair
+                pair1 = f"{ann1}-{ann2}"
+                pair2 = f"{ann2}-{ann1}"
+                if pair1 in all_pair_kappas:
+                    matrix[i, j] = np.mean(all_pair_kappas[pair1])
+                elif pair2 in all_pair_kappas:
+                    matrix[i, j] = np.mean(all_pair_kappas[pair2])
+
+    # Create custom annotation function
+    def format_value(val):
+        if val in [0, 1]:
+            return '-'
+        return f'{val:.2f}'
+
+    # Create mask for values that are 0 or 1
+    mask = (matrix == 0) | (matrix == 1)
+    
+    # Create the heatmap
+    plt.figure(figsize=(10, 8))
+    
+    # Create base heatmap
+    sns.heatmap(matrix, 
+                annot=True,  # Show values in cells
+                fmt='.2f',   # Format as 2 decimal places
+                cmap='RdYlGn',  # Red-Yellow-Green colormap
+                xticklabels=heatmap_tags,
+                yticklabels=heatmap_tags,
+                vmin=0,      # Minimum value for color scaling
+                vmax=1,      # Maximum value for color scaling
+                square=True, # Make cells square
+                mask=mask,   # Apply mask for special formatting
+                cbar=True,   # Show colorbar
+                annot_kws={'size': 12})  # Bigger font size for numbers
+
+    # Overlay very light grey boxes with '-' for 0 and 1 values
+    sns.heatmap(matrix, 
+                annot=[[format_value(val) for val in row] for row in matrix],
+                fmt='',      # No formatting as we're using custom format
+                cmap=['#F5F5F5'],  # Very light grey color
+                xticklabels=heatmap_tags,
+                yticklabels=heatmap_tags,
+                vmin=0,
+                vmax=1,
+                square=True,
+                mask=~mask,  # Invert mask to only show 0 and 1 values
+                cbar=False,  # Don't show second colorbar
+                annot_kws={'size': 12, 'color': '#A5A5A5'})  # Bigger white font
+
+    #plt.title('Overall Average Agreement Heatmap')
+    plt.tight_layout()
+    
+    # Save the heatmap
+    heatmap_path = output_path.replace('.xlsx', '_heatmap.png')
+    plt.savefig(heatmap_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"Saved heatmap to: {heatmap_path}")
+
 def create_excel_report(iterations_data, output_path):
     """Create Excel report with all statistics."""
     wb = Workbook()
@@ -293,7 +370,37 @@ def create_excel_report(iterations_data, output_path):
         ws[f'C{row}'] = num_iterations
         row += 1
 
+    # After writing the flat list of pairs, add a matrix view
+    row += 2
+    ws[f'A{row}'] = "Overall Average Agreements Matrix"
+    ws[f'A{row}'].font = Font(bold=True)
+    row += 1
+
+    # Create matrix headers
+    for i, ann in enumerate(all_annotators):
+        ws.cell(row=row, column=i+2, value=ann)
+        ws.cell(row=row+i+1, column=1, value=ann)
+
+    # Fill the matrix with average kappa values
+    for i, ann1 in enumerate(all_annotators):
+        for j, ann2 in enumerate(all_annotators):
+            if ann1 == ann2:
+                ws.cell(row=row+i+1, column=j+2, value=1.0)
+            else:
+                # Try both orderings of the pair
+                pair1 = f"{ann1}-{ann2}"
+                pair2 = f"{ann2}-{ann1}"
+                if pair1 in all_pair_kappas:
+                    value = np.mean(all_pair_kappas[pair1])
+                    ws.cell(row=row+i+1, column=j+2, value=value)
+                elif pair2 in all_pair_kappas:
+                    value = np.mean(all_pair_kappas[pair2])
+                    ws.cell(row=row+i+1, column=j+2, value=value)
+
     wb.save(output_path)
+    
+    # Create and save the heatmap
+    create_agreement_heatmap(all_pair_kappas, all_annotators, output_path)
 
 def main():
     # Set up logging
@@ -337,7 +444,15 @@ def main():
         
         # Create and save report
         annotators_str = '-'.join(all_annotators)  # Join annotator names with hyphens
-        output_path = os.path.join(folder_path, f'agreement-statistics-{annotators_str}.xlsx')
+        proposed_filename = f'agreement-statistics-{annotators_str}.xlsx'
+        
+        # Windows max path length is 260, and max filename is 255
+        if len(proposed_filename) > 255:
+            output_filename = 'agreement-statistics-ALL.xlsx'
+        else:
+            output_filename = proposed_filename
+            
+        output_path = os.path.join(folder_path, output_filename)
         logging.info(f"Creating Excel report at: {output_path}")
         create_excel_report(iterations_data, output_path)
         logging.info("Processing completed successfully")
