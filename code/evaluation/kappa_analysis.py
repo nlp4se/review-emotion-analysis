@@ -26,7 +26,7 @@ all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF',
                   'agreement_mistral-large-2411-1-mistral-large-2411-2-mistral-large-2411-3',
                   'agreement_gemini-2-0-flash-1-gemini-2-0-flash-2-gemini-2-0-flash-3', 
                   'agreement_gemini-2-0-flash-1-gemini-2-0-flash-2-gemini-2-0-flash-3-gpt-4o-1-gpt-4o-2-gpt-4o-3-mistral-large-2411-1-mistral-large-2411-2-mistral-large-2411-3']
-heatmap_tags = ['H_1', 'H_2', 'H_3', 'H_4', 'H_5', 'H_A', 'GPT_A', 'Mistral_A', 'Gemini_A', 'LLM_A']
+heatmap_tags = ['Human_1', 'Human_2', 'Human_3', 'Human_4', 'Human_5', 'Human_A', 'GPT_A', 'Mistral_A', 'Gemini_A', 'LLM_A']
 
 def get_annotation_data(folder_path, exclude_iterations=None):
     """Extract annotation data from all iteration folders."""
@@ -141,44 +141,43 @@ def calculate_fleiss_kappa_for_iteration(annotations):
     filtered_annotations = {ann: data for ann, data in annotations.items() 
                           if ann in all_annotators}
     
-    # Add defensive check
     if not filtered_annotations:
         print("Warning: No valid annotations found for this iteration")
         return float('nan')
         
     num_reviews = len(next(iter(filtered_annotations.values())))
-    num_emotions = 10
+    num_emotions = 10  # Number of emotions being rated
     num_annotators = len(filtered_annotations)
     
-    # Add defensive check
     if num_reviews == 0:
         print("Warning: No reviews found in annotations")
         return float('nan')
-    
-    # Create a matrix where each row represents one item (review-emotion pair)
-    # and contains the number of raters who assigned each category (0 or 1)
-    n = num_annotators  # number of raters
-    N = num_reviews * num_emotions  # number of subjects (review-emotion pairs)
-    
-    # Initialize ratings matrix for each subject
-    ratings = np.zeros((N, 2))  # 2 categories: 0 and 1
+
+    # For each review-emotion pair, we need to count how many annotators marked 0 and 1
+    # Create a matrix of shape (num_reviews * num_emotions, 2) where
+    # each row represents a review-emotion pair and columns represent counts of 0s and 1s
+    ratings_matrix = np.zeros((num_reviews * num_emotions, 2))
     
     # Fill the ratings matrix
     for i in range(num_reviews):
         for j in range(num_emotions):
             idx = i * num_emotions + j
-            # Count ratings for this review-emotion pair
+            # Count how many annotators marked this emotion as present (1)
             count_ones = sum(1 for ann in filtered_annotations.values() 
                            if ann[i][j] == 1)
-            ratings[idx, 1] = count_ones  # number of 1s
-            ratings[idx, 0] = n - count_ones  # number of 0s
+            ratings_matrix[idx, 1] = count_ones
+            ratings_matrix[idx, 0] = num_annotators - count_ones
     
-    # Calculate P_i (proportion of agreement for each subject)
-    P_i = np.sum(ratings * (ratings - 1), axis=1) / (n * (n - 1))
-    P_bar = np.mean(P_i)  # mean agreement across subjects
+    # Calculate P_i (proportion of agreeing pairs out of all possible pairs)
+    # For each item (review-emotion pair)
+    P_i = np.sum(ratings_matrix * (ratings_matrix - 1), axis=1) / (num_annotators * (num_annotators - 1))
+    
+    # Calculate P̄ (mean agreement across all items)
+    P_bar = np.mean(P_i)
     
     # Calculate P_e (expected agreement by chance)
-    p_j = np.sum(ratings, axis=0) / (N * n)  # proportion of assignments in each category
+    # First get the proportion of all ratings in each category (0 and 1)
+    p_j = np.sum(ratings_matrix, axis=0) / (ratings_matrix.shape[0] * num_annotators)
     P_e = np.sum(p_j ** 2)
     
     # Calculate Fleiss' Kappa
@@ -186,7 +185,16 @@ def calculate_fleiss_kappa_for_iteration(annotations):
     
     return kappa
 
-def create_agreement_heatmap(all_pair_kappas, all_annotators, output_path):
+def create_agreement_heatmap(all_pair_kappas, all_annotators, output_path, show_full_matrix=True):
+    """
+    Create a heatmap of agreement scores.
+    
+    Args:
+        all_pair_kappas: Dictionary of pairwise kappa scores
+        all_annotators: List of annotator names
+        output_path: Path to save the heatmap
+        show_full_matrix: If False, only shows lower triangle of the matrix
+    """
     # Create the matrix for the heatmap
     n = len(all_annotators)
     matrix = np.zeros((n, n))
@@ -214,38 +222,47 @@ def create_agreement_heatmap(all_pair_kappas, all_annotators, output_path):
     # Create mask for values that are 0 or 1
     mask = (matrix == 0) | (matrix == 1)
     
+    # Add mask for upper triangle if not showing full matrix
+    if not show_full_matrix:
+        mask = mask | np.triu(np.ones_like(matrix), k=1).astype(bool)
+    
     # Create the heatmap
-    plt.figure(figsize=(10, 8))
+    plt.figure(figsize=(12, 10))
     
     # Create base heatmap
     sns.heatmap(matrix, 
-                annot=True,  # Show values in cells
-                fmt='.2f',   # Format as 2 decimal places
-                cmap='RdYlGn',  # Red-Yellow-Green colormap
-                xticklabels=heatmap_tags,
-                yticklabels=heatmap_tags,
-                vmin=0,      # Minimum value for color scaling
-                vmax=1,      # Maximum value for color scaling
-                square=True, # Make cells square
-                mask=mask,   # Apply mask for special formatting
-                cbar=True,   # Show colorbar
-                annot_kws={'size': 12})  # Bigger font size for numbers
-
-    # Overlay very light grey boxes with '-' for 0 and 1 values
-    sns.heatmap(matrix, 
-                annot=[[format_value(val) for val in row] for row in matrix],
-                fmt='',      # No formatting as we're using custom format
-                cmap=['#F5F5F5'],  # Very light grey color
+                annot=True,
+                fmt='.2f',
+                cmap='RdYlGn',
                 xticklabels=heatmap_tags,
                 yticklabels=heatmap_tags,
                 vmin=0,
                 vmax=1,
                 square=True,
-                mask=~mask,  # Invert mask to only show 0 and 1 values
-                cbar=False,  # Don't show second colorbar
-                annot_kws={'size': 12, 'color': '#A5A5A5'})  # Bigger white font
+                mask=mask,
+                cbar=True,
+                annot_kws={'size': 16})
 
-    #plt.title('Overall Average Agreement Heatmap')
+    # Overlay for special values
+    sns.heatmap(matrix, 
+                annot=[[format_value(val) for val in row] for row in matrix],
+                fmt='',
+                cmap=['#F5F5F5'],
+                xticklabels=heatmap_tags,
+                yticklabels=heatmap_tags,
+                vmin=0,
+                vmax=1,
+                square=True,
+                mask=~mask,
+                cbar=False,
+                annot_kws={'size': 16, 'color': '#A5A5A5'})
+
+    plt.xticks(rotation=45, ha='right', fontsize=14)
+    plt.yticks(rotation=0, fontsize=14)
+    
+    cbar = plt.gca().collections[0].colorbar
+    cbar.ax.tick_labels = plt.setp(cbar.ax.get_yticklabels(), fontsize=12)
+
     plt.tight_layout()
     
     # Save the heatmap
@@ -254,7 +271,7 @@ def create_agreement_heatmap(all_pair_kappas, all_annotators, output_path):
     plt.close()
     print(f"Saved heatmap to: {heatmap_path}")
 
-def create_excel_report(iterations_data, output_path):
+def create_excel_report(iterations_data, output_path, show_full_matrix=False):
     """Create Excel report with all statistics."""
     wb = Workbook()
     ws = wb.active
@@ -400,7 +417,7 @@ def create_excel_report(iterations_data, output_path):
     wb.save(output_path)
     
     # Create and save the heatmap
-    create_agreement_heatmap(all_pair_kappas, all_annotators, output_path)
+    create_agreement_heatmap(all_pair_kappas, all_annotators, output_path, show_full_matrix=show_full_matrix)
 
 def main():
     # Set up logging
@@ -415,15 +432,15 @@ def main():
     
     if len(sys.argv) < 2:
         logging.error("Invalid number of arguments")
-        print("Usage: python kappa_analysis.py <folder_path> [excluded_iterations]")
-        print("Example: python kappa_analysis.py ./data 0,1,2")
+        print("Usage: python kappa_analysis.py <folder_path> [excluded_iterations] [show_full_matrix]")
+        print("Example: python kappa_analysis.py ./data 0,1,2 true")
         sys.exit(1)
     
     folder_path = sys.argv[1]
     
     # Parse excluded iterations if provided
     exclude_iterations = None
-    if len(sys.argv) > 2:
+    if len(sys.argv) > 2 and sys.argv[2] != 'true' and sys.argv[2] != 'false':
         try:
             exclude_iterations = [int(x) for x in sys.argv[2].split(',')]
             logging.info(f"Excluding iterations: {exclude_iterations}")
@@ -431,6 +448,13 @@ def main():
             logging.error("Invalid format for excluded iterations. Use comma-separated integers.")
             print("Error: Invalid format for excluded iterations. Use comma-separated integers (e.g., 0,1,2)")
             sys.exit(1)
+    
+    # Parse show_full_matrix parameter if provided
+    show_full_matrix = False  # default value
+    if len(sys.argv) > 3:
+        show_full_matrix = sys.argv[3].lower() == 'true'
+    elif len(sys.argv) == 3 and (sys.argv[2] == 'true' or sys.argv[2] == 'false'):
+        show_full_matrix = sys.argv[2].lower() == 'true'
     
     if not os.path.exists(folder_path):
         logging.error(f"Folder does not exist: {folder_path}")
@@ -454,7 +478,9 @@ def main():
             
         output_path = os.path.join(folder_path, output_filename)
         logging.info(f"Creating Excel report at: {output_path}")
-        create_excel_report(iterations_data, output_path)
+        
+        # Pass show_full_matrix parameter to create_excel_report
+        create_excel_report(iterations_data, output_path, show_full_matrix)
         logging.info("Processing completed successfully")
         print(f"Agreement statistics have been saved to: {output_path}")
     
