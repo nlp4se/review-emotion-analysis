@@ -6,17 +6,20 @@ from pathlib import Path
 import argparse
 import numpy as np
 
-def analyze_emotion_annotations(xlsx_path):
+def analyze_emotion_annotations(*, xlsx_path: str, output_dir: Path | str | None = None):
     # Read the Excel file
     df = pd.read_excel(xlsx_path, engine='openpyxl')
     
     # Get emotion columns (J to S)
     emotion_cols = df.iloc[:, 10:20]  # 0-based indexing for columns J to S
     
-    # Create output directory in same location as input file
+    # Create output directory - either use provided path or create next to input file
     input_path = Path(xlsx_path)
-    output_dir = input_path.parent / f'analysis_output_{input_path.stem}'
-    output_dir.mkdir(exist_ok=True)
+    if output_dir is None:
+        output_dir = input_path.parent / f'analysis_output_{input_path.stem}'
+    else:
+        output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
     
     # 1. Create pie chart of emotion distribution
     emotion_counts = (emotion_cols == 1).sum()
@@ -136,15 +139,22 @@ def analyze_emotion_annotations(xlsx_path):
 if __name__ == "__main__":
     # Set up command line argument parser
     parser = argparse.ArgumentParser(description='Analyze emotion annotations from Excel file.')
-    parser.add_argument('xlsx_file', 
+    parser.add_argument('--input-file', 
                        type=str,
+                       required=True,
                        help='Path to the Excel file containing emotion annotations')
+    parser.add_argument('--output-dir',
+                       type=str,
+                       help='Path to output directory (default: creates directory next to input file)')
     
     args = parser.parse_args()
     
     # Verify file exists
-    if not os.path.exists(args.xlsx_file):
-        print(f"Error: File '{args.xlsx_file}' does not exist.")
+    if not os.path.exists(args.input_file):
+        print(f"Error: File '{args.input_file}' does not exist.")
         exit(1)
         
-    analyze_emotion_annotations(args.xlsx_file)
+    analyze_emotion_annotations(
+        xlsx_path=args.input_file,
+        output_dir=args.output_dir
+    )

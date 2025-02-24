@@ -1,13 +1,17 @@
-import os
-import sys
 import pandas as pd
 from pathlib import Path
 import csv
+import argparse
 
-def process_agreement(input_folder):
+def process_agreement(input_folder, annotators=None, output_folder=None):
     print(f"Starting agreement processing for folder: {input_folder}")
     # Convert input folder to Path object for easier handling
     input_path = Path(input_folder)
+    # Set output path to input path if not specified
+    output_path = Path(output_folder) if output_folder else input_path
+    
+    # Create output directory if it doesn't exist
+    output_path.mkdir(parents=True, exist_ok=True)
     
     # Create a list to store all processed dataframes
     all_processed_dfs = []
@@ -29,17 +33,6 @@ def process_agreement(input_folder):
         annotation_files = []
         iteration_prefix = None
         
-        # Define allowed annotator acronyms
-        #annotators = ['QM', 'MT', 'MO', 'JM', 'XF']
-        #annotators = ['gpt-4o','mistral-large-2411','gemini-2-0-flash']
-        #annotators = ['gpt-4o-1','gpt-4o-2','gpt-4o-3']
-        #annotators = ['mistral-large-2411-1','mistral-large-2411-2','mistral-large-2411-3']
-        #annotators = ['gemini-2-0-flash-1','gemini-2-0-flash-2','gemini-2-0-flash-3']
-        annotators = ['gpt-4o-1-gpt-4o-2-gpt-4o-3',
-                      'mistral-large-2411-1-mistral-large-2411-2-mistral-large-2411-3',
-                      'gemini-2-0-flash-1-gemini-2-0-flash-2-gemini-2-0-flash-3']
-        #annotators = ['agreement_gemini-2-0-flash-1-gemini-2-0-flash-2-gemini-2-0-flash-3']
-
         # Create compound name from annotators
         annotator_name = '-'.join(sorted(annotators))  # Sort for consistency
         
@@ -102,8 +95,8 @@ def process_agreement(input_folder):
         print("\nMerging all processed dataframes...")
         merged_df = pd.concat(all_processed_dfs, ignore_index=True)
         
-        merged_output_csv = input_path / f'agreement_{annotator_name}.csv'
-        merged_output_xlsx = input_path / f'agreement_{annotator_name}.xlsx'
+        merged_output_csv = output_path / f'agreement_{annotator_name}.csv'
+        merged_output_xlsx = output_path / f'agreement_{annotator_name}.xlsx'
         
         merged_df.to_csv(merged_output_csv, index=False, quoting=csv.QUOTE_ALL, escapechar='\\')
         merged_df.to_excel(merged_output_xlsx, index=False)
@@ -112,9 +105,13 @@ def process_agreement(input_folder):
         print("\nNo data to merge - no agreement files were generated.")
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python agreement.py <input_folder>")
-        sys.exit(1)
-        
-    input_folder = sys.argv[1]
-    process_agreement(input_folder)
+    parser = argparse.ArgumentParser(description='Process agreement between annotators.')
+    parser.add_argument('--input-folder', required=True,
+                      help='Input folder containing annotation files')
+    parser.add_argument('--output-folder', required=False,
+                      help='Output folder for agreement files (defaults to input folder)')
+    parser.add_argument('--annotators', nargs='+', required=True,
+                      help='List of annotator names')
+    
+    args = parser.parse_args()
+    process_agreement(args.input_folder, args.annotators, args.output_folder)
