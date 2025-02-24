@@ -16,17 +16,61 @@ class GeminiEmotionAnnotator(EmotionAnnotator):
 
     def get_annotation(self, reviews_batch: list, **kwargs) -> tuple:
         """Get emotion annotations for a batch of reviews using Gemini API."""
-        model = kwargs.get('model', 'gemini-pro')
+        model = kwargs.get('model', 'gemini-2.0-flash')
         temperature = kwargs.get('temperature', 0)
+
+        # Load guidelines
+        with open('data\guidelines.txt', 'r', encoding='utf-8') as file:
+            guidelines = file.read()
+
+            # Format instructions similar to Mistral
+            system_instruction = f"""
+            You are an assistant that annotates emotions in sentences from app reviews. You have been provided detailed guidelines below that you MUST follow at all times.
+
+            **Annotation Guidelines:**
+            {guidelines}
+
+            **Annotation Input Format:**
+            The input is a JSON list of objects following this schema:
+            [
+            {{
+                "review": "The full text of the review",
+                "sentence": "The sentence to annotate"
+            }}
+            ]
+
+            **Annotation Output Format:**
+            Return a JSON list of objects where each item corresponds to the input sentence in the same order, following this schema:
+            [
+            {{
+                "Joy": 0 or 1,
+                "Trust": 0 or 1,
+                "Fear": 0 or 1,
+                "Surprise": 0 or 1,
+                "Sadness": 0 or 1,
+                "Disgust": 0 or 1,
+                "Anger": 0 or 1,
+                "Anticipation": 0 or 1,
+                "Neutral": 0 or 1,
+                "Reject": 0 or 1
+            }}
+            ]
+
+            **Important Rules:**
+            - Each output object must directly correspond to an input sentence.
+            - Ensure JSON validity and maintain correct key-value formatting.
+            - Do NOT include explanations, additional text, or formatting.
+            """
         
         try:
             # Configure the model
             model = self.client.GenerativeModel(model_name=model,
-                                              generation_config={
-                                                  "temperature": temperature,
-                                                  "top_p": 1,
-                                                  "top_k": 1
-                                              })
+                                                system_instruction=system_instruction,
+                                                generation_config={
+                                                    "temperature": temperature,
+                                                    "top_p": 1,
+                                                    "top_k": 1
+                                                })
             
             # Prepare the prompt
             user_prompt = json.dumps(reviews_batch, ensure_ascii=False)
@@ -39,9 +83,9 @@ class GeminiEmotionAnnotator(EmotionAnnotator):
             
             # Collect usage statistics (Note: Gemini might not provide detailed token usage)
             usage_metadata = {
-                'prompt_tokens': getattr(response, 'prompt_token_count', 0),
-                'completion_tokens': getattr(response, 'completion_token_count', 0),
-                'total_tokens': getattr(response, 'total_token_count', 0)
+                'prompt_tokens': response.usage_metadata.prompt_token_count,
+                'completion_tokens': response.usage_metadata.candidates_token_count,
+                'total_tokens': response.usage_metadata.total_token_count
             }
 
             return annotations_list, usage_metadata

@@ -35,7 +35,8 @@ In addition, the `data` root folder contains the following subfolders:
 - `annotations` contains the results of the human and LLM-based annotation:
 -- `iterations` contains both human and LLM-based annotations for each iteration.
 -- `llm-annotations` contains the LLM-based annotations for each assistance, including results for various temperature values: low (0), medium (0.5), and high (1) (see [LLM-based annotation](#llm-based-annotation)).
-- `agreements` contains the results of the agreement analysis between the human and LLM-based annotations (see [Evaluation](#evaluation)).
+- `agreements` contains the results of the agreement analysis between the human and LLM-based annotations (see [Data Processing](#data-processing)).
+- `evaluation` contains the results of the evaluation of the LLM-based annotations (see [Evaluation](#evaluation)), including statistics, Cohen's Kappa, and correctness.
 
 ### Code
 
@@ -73,12 +74,12 @@ This will create an assistant loading the `data/guidelines.txt` file and using t
 
 Annotate emotions using the `annotate_emotions.py` script. For instance, for GPT-4o, you can run the following command:
 
-```python .\code\llm_annotation\annotate_emotions_openai.py --input .\data\ground-truth.xlsx --output .\data\annotations\llm-annotations\temperature-00\ --batch_size 10 --model gpt-4o --temperature 0 --sleep_time 10```
+```python .\code\llm_annotation\annotate_emotions_openai.py --input .\data\ground-truth.xlsx --output .\data\annotations\llm\temperature-00\ --batch_size 10 --model gpt-4o --temperature 0 --sleep_time 10```
 
 Parameters include:
 
 - `input`: path to the input file containing the set of reviews to annotate (e.g., `data/ground-truth.xlsx`).
-- `output`: path to the output folder where annotations will be saved (e.g., `data/annotations/llm-annotations/temperature-00/`).
+- `output`: path to the output folder where annotations will be saved (e.g., `data/annotations/llm/temperature-00/`).
 - `batch_size`: number of reviews to annotate for each user request (e.g., 10).
 - `model`: model to use for the annotation (e.g., `gpt-4o`).
 - `temperature`: temperature for the model responses (e.g., 0).
@@ -94,7 +95,7 @@ In this stage, we refactor all files into iterations and we consolidate the agre
 
 We split the annotations into iterations based on the number of annotators or LLM runs. For instance, for GPT-4o (run 1), we can run the following command:
 
-`python code\data_processing\split_annotations.py --input_file data\annotations\llm-annotations\temperature-00\gpt-4o-1-annotations.xlsx --output_dir data\annotations\iterations\`
+`python code\data_processing\split_annotations.py --input_file data\annotations\llm\temperature-00\gpt-4o-1-annotations.xlsx --output_dir data\annotations\iterations\`
 
 This facilitates the Kappa analysis and agreement in alignment with each human iteration.
 
@@ -118,7 +119,7 @@ We evaluate the statistics of the emotions in the annotations, including emotion
 
 We measure the average pairwise Cohen's Kappa agreement between annotators or LLM runs. For instance, for GPT-4o, we can run the following command:
 
-`python code\evaluation\kappa.py --input_folder data-mock\annotations\iterations\ --output_folder data-mock\evaluation\kappa\ --annotators gpt-4o-1,gpt-4o-2,gpt-4o-3 --exclude 0,1,2`
+`python code\evaluation\kappa.py --input_folder data\annotations\iterations\ --output_folder data\evaluation\kappa\ --annotators gpt-4o-1,gpt-4o-2,gpt-4o-3 --exclude 0,1,2`
 
 In our analysis, we exclude iterations 0, 1 and 2 as they were used for guidelines refinement.
 

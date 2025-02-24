@@ -13,7 +13,7 @@ load_dotenv()
 
 def load_assistant_id(model: str) -> str:
     """Load the assistant ID from a model-specific file if it exists."""
-    assistant_id_file = f"assistant_id_{model}.txt"
+    assistant_id_file = f"data/assistants/assistant_id_{model}.txt"
     if os.path.exists(assistant_id_file):
         with open(assistant_id_file, 'r') as file:
             return file.read().strip()
