@@ -36,7 +36,7 @@ In addition, the `data` root folder contains the following subfolders:
 -- `iterations` contains both human and LLM-based annotations for each iteration.
 -- `llm-annotations` contains the LLM-based annotations for each assistance, including results for various temperature values: low (0), medium (0.5), and high (1) (see [LLM-based annotation](#llm-based-annotation)).
 - `agreements` contains the results of the agreement analysis between the human and LLM-based annotations (see [Data Processing](#data-processing)).
-- `evaluation` contains the results of the evaluation of the LLM-based annotations (see [Evaluation](#evaluation)), including statistics, Cohen's Kappa, and correctness.
+- `evaluation` contains the results of the evaluation of the LLM-based annotations (see [Evaluation](#evaluation)), including statistics, Cohen's Kappa, correctness, and cost-efficiency analysis.
 
 ### 💻 Code
 

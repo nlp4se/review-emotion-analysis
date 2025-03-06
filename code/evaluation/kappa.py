@@ -28,7 +28,7 @@ all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF',
                   'agreement_gemini-2-0-flash-1-gemini-2-0-flash-2-gemini-2-0-flash-3', 
                   'agreement_gemini-2-0-flash-1-gemini-2-0-flash-2-gemini-2-0-flash-3-gpt-4o-1-gpt-4o-2-gpt-4o-3-mistral-large-2411-1-mistral-large-2411-2-mistral-large-2411-3']
 
-heatmap_tags = ['Human_1', 'Human_2', 'Human_3', 'Human_4', 'Human_5', 'Human_A', 'GPT_A', 'Mistral_A', 'Gemini_A', 'LLM_A']
+heatmap_tags = ['Ann_1', 'Ann_2', 'Ann_3', 'Ann_4', 'Ann_5', 'Ann_A', 'GPT_A', 'Mistral_A', 'Gemini_A', 'LLM_A']
 
 def get_annotation_data(folder_path, exclude_iterations=None):
     """Extract annotation data from all iteration folders."""
