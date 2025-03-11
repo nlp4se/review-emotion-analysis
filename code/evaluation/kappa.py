@@ -11,18 +11,12 @@ import matplotlib.pyplot as plt
 import argparse
 
 # Fixed list of all possible annotators in specified order
-#all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 'gpt-4o', 'gpt-4o-mini']
-#all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 'gpt-4o-mini']
-#all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 'gpt-4o']
-#all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 'mistral-large-2411']
-#all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 'gemini-2-0-flash']
-#all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF']
 #all_annotators = ['gpt-4o', 'mistral-large-2411', 'gemini-2-0-flash']
 #all_annotators = ['gpt-4o-1','gpt-4o-2','gpt-4o-3']
 #all_annotators = ['mistral-large-2411-1','mistral-large-2411-2','mistral-large-2411-3']
 #all_annotators = ['gemini-2-0-flash-1','gemini-2-0-flash-2','gemini-2-0-flash-3']
-all_annotators = ['QM', 'MT', 'MO', 'JM', 'XF', 
-                  'agreement_JM-MO-MT-QM-XF', 
+all_annotators = ['Ann_1', 'Ann_2', 'Ann_3', 'Ann_4', 'Ann_5', 
+                  'agreement_Ann_1-Ann_2-Ann_3-Ann_4-Ann_5', 
                   'agreement_gpt-4o-1-gpt-4o-2-gpt-4o-3',
                   'agreement_mistral-large-2411-1-mistral-large-2411-2-mistral-large-2411-3',
                   'agreement_gemini-2-0-flash-1-gemini-2-0-flash-2-gemini-2-0-flash-3', 
@@ -101,41 +95,69 @@ def parse_annotations(df):
         logging.error(f"Error in parse_annotations: {str(e)}")
         raise
 
-def calculate_pairwise_cohen_kappa(iteration, annotations):
+def calculate_pairwise_cohen_kappa(iteration, annotations, class_level=False):
     """Calculate Cohen's Kappa for each pair of annotators."""
-    # Only consider annotators that are in our predefined list
     annotators = [ann for ann in all_annotators if ann in annotations]
     pair_kappas = {}
+    class_kappas = {} if class_level else None
 
     logging.info(f"Iteration {iteration}. Valid annotators: {annotators}")
     
     if len(annotators) < 2:
         print(f"Warning: Not enough valid annotators to calculate pairwise kappa (found {len(annotators)})")
         print(annotators)
-        return {}
+        return ({}, {}) if class_level else {}
+    
+    emotions = ['Joy', 'Trust', 'Fear', 'Surprise', 'Sadness', 
+                'Disgust', 'Anger', 'Anticipation', 'Neutral', 'Reject']
     
     for i in range(len(annotators)):
         for j in range(i + 1, len(annotators)):
             ann1, ann2 = annotators[i], annotators[j]
             
-            # Get full annotation matrices for both annotators
             labels1 = annotations[ann1]
             labels2 = annotations[ann2]
             
-            # Add defensive check
             if len(labels1) == 0 or len(labels2) == 0:
                 print(f"Warning: Empty labels found for {ann1}-{ann2}")
                 continue
             
-            # Flatten the matrices into 1D arrays
+            # Calculate overall kappa
             labels1_flat = labels1.flatten()
             labels2_flat = labels2.flatten()
-            
-            # Calculate kappa on all binary decisions
             kappa = cohen_kappa_score(labels1_flat, labels2_flat)
             pair_kappas[f"{ann1}-{ann2}"] = kappa
+            
+            # Calculate class-level kappa if requested
+            if class_level:
+                if f"{ann1}-{ann2}" not in class_kappas:
+                    class_kappas[f"{ann1}-{ann2}"] = {}
+                
+                # Calculate kappa for each emotion separately
+                for emotion_idx, emotion in enumerate(emotions):
+                    try:
+                        # Get labels for this emotion
+                        emotion_labels1 = labels1[:, emotion_idx]
+                        emotion_labels2 = labels2[:, emotion_idx]
+                        
+                        # Check if there's any variation in the labels
+                        if len(np.unique(emotion_labels1)) > 1 or len(np.unique(emotion_labels2)) > 1:
+                            emotion_kappa = cohen_kappa_score(emotion_labels1, emotion_labels2)
+                            class_kappas[f"{ann1}-{ann2}"][emotion] = emotion_kappa
+                        else:
+                            # If all annotations are the same (all 0s or all 1s)
+                            # Check if both annotators agree
+                            if np.array_equal(emotion_labels1, emotion_labels2):
+                                class_kappas[f"{ann1}-{ann2}"][emotion] = 1.0
+                            else:
+                                class_kappas[f"{ann1}-{ann2}"][emotion] = 0.0
+                            
+                    except Exception as e:
+                        logging.warning(f"Could not calculate kappa for {emotion}: {str(e)}")
+                        # Instead of None, use 0.0 for cases where kappa can't be calculated
+                        class_kappas[f"{ann1}-{ann2}"][emotion] = 0.0
     
-    return pair_kappas
+    return (pair_kappas, class_kappas) if class_level else pair_kappas
 
 def create_agreement_heatmap(all_pair_kappas, all_annotators, output_path, show_full_matrix=True):
     """
@@ -216,14 +238,14 @@ def create_agreement_heatmap(all_pair_kappas, all_annotators, output_path, show_
     cbar.ax.tick_labels = plt.setp(cbar.ax.get_yticklabels(), fontsize=12)
 
     plt.tight_layout()
-    
+
     # Save the heatmap
     heatmap_path = output_path.replace('.xlsx', '_heatmap.png')
     plt.savefig(heatmap_path, dpi=300, bbox_inches='tight')
     plt.close()
     print(f"Saved heatmap to: {heatmap_path}")
 
-def create_excel_report(iterations_data, output_path, show_full_matrix=False):
+def create_excel_report(iterations_data, output_path, show_full_matrix=False, class_level=False):
     """Create Excel report with all statistics."""
     wb = Workbook()
     ws = wb.active
@@ -234,15 +256,32 @@ def create_excel_report(iterations_data, output_path, show_full_matrix=False):
     ws['A1'].font = Font(bold=True, size=14)
     
     row = 3
+    
+    emotions = ['Joy', 'Trust', 'Fear', 'Surprise', 'Sadness', 
+                'Disgust', 'Anger', 'Anticipation', 'Neutral', 'Reject']
 
-    # Convert iteration keys to integers and sort numerically
+    # Initialize dictionaries to store class-level statistics
+    if class_level:
+        all_class_kappas = {emotion: [] for emotion in emotions}
+
+    # Process iterations
     for iteration, annotations in sorted(iterations_data.items(), key=lambda x: int(x[0])):
         ws[f'A{row}'] = f"Iteration {iteration}"
         ws[f'A{row}'].font = Font(bold=True)
         row += 1
         
+        # Calculate kappas
+        if class_level:
+            pair_kappas, class_kappas = calculate_pairwise_cohen_kappa(iteration, annotations, class_level=True)
+            # Just collect the class-level kappas for global statistics
+            for pair_data in class_kappas.values():
+                for emotion in emotions:
+                    if pair_data[emotion] is not None:
+                        all_class_kappas[emotion].append(pair_data[emotion])
+        else:
+            pair_kappas = calculate_pairwise_cohen_kappa(iteration, annotations)
+
         # Pairwise Cohen's Kappa
-        pair_kappas = calculate_pairwise_cohen_kappa(iteration, annotations)
         ws[f'A{row}'] = "Pairwise Cohen's Kappa"
         ws[f'A{row}'].font = Font(bold=True)
         row += 1
@@ -329,6 +368,8 @@ def create_excel_report(iterations_data, output_path, show_full_matrix=False):
     ws[f'A{row}'].font = Font(bold=True)
     row += 1
 
+    matrix_start_row = row  # Save the starting row of the matrix
+
     # Create matrix headers
     for i, ann in enumerate(all_annotators):
         ws.cell(row=row, column=i+2, value=ann)
@@ -349,6 +390,39 @@ def create_excel_report(iterations_data, output_path, show_full_matrix=False):
                 elif pair2 in all_pair_kappas:
                     value = np.mean(all_pair_kappas[pair2])
                     ws.cell(row=row+i+1, column=j+2, value=value)
+
+    # Update row to be after the matrix
+    row = matrix_start_row + len(all_annotators) + 2
+
+    # Add global class-level statistics if requested (only at the end)
+    if class_level:
+        row += 2
+        ws[f'A{row}'] = "Global Class-level Statistics"
+        ws[f'A{row}'].font = Font(bold=True, size=12)
+        row += 1
+        
+        ws[f'A{row}'] = "Emotion"
+        ws[f'B{row}'] = "Average Kappa"
+        ws[f'C{row}'] = "Number of Valid Pairs"
+        row += 1
+        
+        # Sort emotions by average kappa for better readability
+        emotion_stats = []
+        for emotion in emotions:
+            values = [v for v in all_class_kappas[emotion] if v is not None]
+            if values:
+                avg_kappa = np.mean(values)
+                emotion_stats.append((emotion, avg_kappa, len(values)))
+        
+        # Sort by average kappa in descending order
+        emotion_stats.sort(key=lambda x: x[1], reverse=True)
+        
+        # Write sorted statistics
+        for emotion, avg_kappa, valid_pairs in emotion_stats:
+            ws[f'A{row}'] = emotion
+            ws[f'B{row}'] = f"{avg_kappa:.3f}"
+            ws[f'C{row}'] = valid_pairs
+            row += 1
 
     wb.save(output_path)
     
@@ -372,6 +446,9 @@ def main():
     parser.add_argument('--annotators',
                        help='Comma-separated list of annotators to analyze',
                        default=None)
+    parser.add_argument('--class-level', 
+                       action='store_true',
+                       help='Calculate class-level (per-label) agreement statistics')
 
     args = parser.parse_args()
     
@@ -433,7 +510,7 @@ def main():
         output_path = os.path.join(output_folder, output_filename)
         logging.info(f"Creating Excel report at: {output_path}")
         
-        create_excel_report(iterations_data, output_path, args.full_matrix)
+        create_excel_report(iterations_data, output_path, args.full_matrix, args.class_level)
         logging.info("Processing completed successfully")
         print(f"Agreement statistics have been saved to: {output_path}")
     
