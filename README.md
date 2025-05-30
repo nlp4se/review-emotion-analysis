@@ -103,7 +103,7 @@ Our research includes an LLM-based annotation experimentation with 3 LLMs: GPT-4
 
 **🔑 Step 1: Add your API key**
 
-If you haven't done this already, add your API key to the `code/.env` file. For instance, for OpenAI, you can add the following:
+If you haven't done this already, add your API key to the `.env` file in the root folder. For instance, for OpenAI, you can add the following:
 
 ```
 OPENAI_API_KEY=sk-proj-...

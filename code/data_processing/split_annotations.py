@@ -39,7 +39,7 @@ def split_annotations(input_file, output_dir):
         output_path = os.path.join(iteration_dir, output_filename)
         
         # Drop duplicates before saving
-        group = group.drop_duplicates()
+        #group = group.drop_duplicates()
         
         # Save the group to a new Excel file
         group.to_excel(output_path, index=False)
