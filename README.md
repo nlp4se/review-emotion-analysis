@@ -65,6 +65,18 @@ Additionally, you will also need at least one API key for OpenAI, Mistral or Gem
 
 **⚙️ Install requirements**
 
+Create a virtual environment:
+
+`python -m venv venv`
+
+Activate the virtual environment. For Linux Based OS Or Mac-OS.
+
+`source venv/bin/activate`
+
+For Windows With Unix Like Shells (for example Git Bash CLI):
+
+`source venv/Scripts/activate`
+
 Install Python dependency requirements running the following command.
 
 ```
