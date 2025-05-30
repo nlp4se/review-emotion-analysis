@@ -14,7 +14,9 @@ The artifact includes:
 
 The artifact was developed to ensure transparency, reproducibility, and extensibility of the experimental pipeline. It enables researchers to replicate, validate, or extend the emotion annotation process across different LLMs and configurations, contributing to the broader goal of integrating emotional insights into requirements engineering practices.
 
-The artifact is available at https://doi.org/10.6084/m9.figshare.28548638.v2.
+## 🔎 Artifact Location
+
+The artifact is available at https://doi.org/10.6084/m9.figshare.28548638.
 
 Find how to cite this replication package and author information at the end of this README file.
 
@@ -211,10 +213,18 @@ This repository is licensed under the GPL-3.0 License. See the LICENSE file for 
 
 ## 👥 Authors information
 
+Full authors list:
+
+- Quim Motger, Dept. of Service and Information System Engineering (ESSI), Universitat Politècnica de Catalunya, Barcelona, Spain, joaquim.motger@upc.edu
+- Marc Oriol, Dept. of Service and Information System Engineering (ESSI), Universitat Politècnica de Catalunya, Barcelona, Spain, marc.oriol@upc.edu
+- Max Tiessler, Dept. of Service and Information System Engineering (ESSI), Universitat Politècnica de Catalunya, Barcelona, Spain, max.tiessler@upc.edu
+- Xavier Franch, Dept. of Service and Information System Engineering (ESSI), Universitat Politècnica de Catalunya, Barcelona, Spain, xavier.franch@upc.edu
+- Jordi Marco, Dept. of Computer Science (CS), Universitat Politècnica de Catalunya, Barcelona, Spain, jordi.marco@upc.edu
+
 To cite this replication package, please use the following citation format:
 
 ```
-Motger, Quim; Oriol, Marc; Tiessler, Max; Franch, Xavier; Marco, Jordi (2025). What About Emotions? Guiding Fine-Grained Emotion Extraction from Mobile App Reviews - Replication Package. figshare. Dataset. https://doi.org/10.6084/m9.figshare.28548638.v2
+Q. Motger, M. Oriol, M. Tiessler, X. Franch, and J. Marco, "What About Emotions? Guiding Fine-Grained Emotion Extraction from Mobile App Reviews - Replication Package". figshare. Dataset. https://doi.org/10.6084/m9.figshare.28548638
 ```
 
 To cite the full paper describing the research that produced these artifacts, please use the following citation format (DOI to be generated upon publication):
