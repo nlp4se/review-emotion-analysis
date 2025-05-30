@@ -38,7 +38,10 @@ def split_annotations(input_file, output_dir):
         output_filename = f'{iteration}_{base_filename}.xlsx'
         output_path = os.path.join(iteration_dir, output_filename)
         
-        # Save the group to a new Excel file, ensuring to keep all rows
+        # Drop duplicates before saving
+        group = group.drop_duplicates()
+        
+        # Save the group to a new Excel file
         group.to_excel(output_path, index=False)
         print(f"Created {output_path}")
 
